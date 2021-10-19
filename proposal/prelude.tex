@@ -1,3 +1,4 @@
+
 \usepackage{times}
 \usepackage{latexsym}
 
@@ -45,16 +46,17 @@
 % \SetWatermarkScale{1}
 
 % fix up author superscripts
+\usepackage[blocks]{authblk}
 \newcommand*\samethanks[1][\value{footnote}]{\footnotemark[#1]}
 \renewcommand*{\Affilfont}{\normalsize\normalfont}
 \renewcommand*{\Authfont}{\bfseries}
-\renewcommand\footnotemark{}
-\makeatletter
-\renewcommand\AB@authnote[1]{\rlap{\textsuperscript{\normalfont#1}}}
-\renewcommand\Authsep{,~~\,}
-\renewcommand\Authand{~~and~}
-\renewcommand\Authands{,~~and~}
-\makeatother
+%% \renewcommand\footnotemark{}
+%%\makeatletter
+%%\renewcommand\AB@authnote[1]{\rlap{\textsuperscript{\normalfont#1}}}
+%%\renewcommand\Authsep{,~~\,}
+%%\renewcommand\Authand{~~and~}
+%%\renewcommand\Authands{,~~and~}
+%%\makeatother
 % end fix up author superscripts
 
 % appendix autoref patch (\autoref subsections in appendix)
