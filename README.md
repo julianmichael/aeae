@@ -2,7 +2,7 @@
 an Adversarial Evaluation of Adversarial Evaluation
 
 ![AEAEAEAEAE](assets/aeae.png)
-<div style="text-align: center; font-style: italic">AEAEAEAEAE</div>
+<div align="center"><em>AEAEAEAEAE</em></div>
 
 ## Usage
 
