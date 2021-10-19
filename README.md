@@ -1,7 +1,7 @@
 # aeae
 an Adversarial Evaluation of Adversarial Evaluation
 
-![AEAEAEAEAE](assets/eaea.png)
+![AEAEAEAEAE](assets/aeae.png)
 *AEAEAEAEAE*
 
 ## Usage
