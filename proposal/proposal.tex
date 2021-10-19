@@ -1,0 +1,94 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage{authblk}
+% \usepackage{times,latexsym}
+\usepackage[T1]{fontenc}
+% \usepackage[]{../common/acl2021}
+% \usepackage[]{../common/tacl2018v2}
+
+% replacement for style file
+\usepackage{natbib}
+% \usepackage{hyperref}
+% \usepackage{url}
+% \renewcommand{\UrlFont}{\ttfamily\small}
+
+\input{prelude}
+\usepackage{enumitem}
+% \usepackage[margin=1.2in]{geometry}
+
+% \usepackage{csquotes}
+
+% \usepackage{titling}
+% \setlength{\droptitle}{-120pt}
+% \predate{\vspace{-50pt}\begin{center}\large}
+% \postdate{\par\end{center}\vspace{-10pt}}
+
+\title{Proposal: An Adversarial Evaluation of Adversarial Evaluation}
+
+\author{Julian Michael}
+% add yourself here
+
+
+\affil[ ]{CSE 599: Empirical Foundations of Machine Learning}
+\affil[ ]{Paul G. Allen School of Computer Science \& Engineering, University of Washington}
+\affil[ ]{\texttt{julianjm@cs.washington.edu}}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Adversarial evaluation and training have been proposed
+\end{abstract}
+
+\paragraph{Introduction}
+End-to-end neural network models have had widespread success on standard benchmarks in NLP
+\citep{wang-etal-2019-glue,wang-etal-2019-superglue,lee-etal-2018-end}.
+However, models trained in the standard Empirical Risk Minimization paradigm (\eg, using
+maximum-likelihood objectives) are liable to succeed in these settings by fitting to features or
+correlations in the data which are ultimately not representative of the underlying task and fail to
+generalize out of distribution, \eg, under domain shift or adversarial perturbation
+\citep{gururangan-etal-2018-annotation,ilyas-etal-2019-adversarial}.
+One promising method to overcome this difficulty is to move past the ERM paradigm and learn or
+evaluate causal features which are invariant across domains or distributions of data.
+While methods to do this often require the use of explicitly specified domains of data (cite DRO
+stuff) \citep{peters-etal-2016-causal,arjovsky-etal-2020-invariant},
+a more lightweight approach is adversarial evaluation and training
+\citep{nie-etal-2020-adversarial,kiela-etal-2021-dynabench} which has annotators deliberately search
+for examples on which a model fails.
+Adversarial evaluations can help expose a model's shortcomings (cite example) and aid in training
+more robust models.
+However, the process of developing adversarial data is imperfect, and adversarial data may itself
+not resemble naturalistic distributions.
+For these reasons, it is not clear what a model's performance under adversarial evaluation implies
+about its performance characteristics on naturalistic distributions,
+and it is not clear in what ways training on adversarial data will aid a model's performance in
+natural settings.
+
+In this project, we propose to investigate the interplay of adversarial learning and evaluation with
+\textit{annotation ambiguity}.
+This is relevant because searching for adversarial examples may end up either oversampling
+ambiguous/arguable examples that humans are likely to get `wrong', or, if the data is filtered for
+high human agreement, it may systematically \textit{under}sample such cases.
+In the former case, training on this data may have limited benefits, and in the latter case,
+adversarial evaluation might underestimate model performance in realistic settings.
+
+\paragraph{Research Question}
+Do adversarial evaluation or training methods introduce systematic biases that ultimately
+misrepresent a model's worst-case performance? In particular, do biases with respect to the
+underlying ambiguity of the underlying data limit the benefits of the adversarial approach?
+
+\paragraph{Methodology}
+
+\paragraph{Data}
+
+\paragraph{Implementation}
+
+\paragraph{Impact}
+
+\bibliographystyle{acl_natbib}
+% \bibliography{references}
+\bibliography{anthology,references}
+
+\end{document}

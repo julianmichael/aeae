@@ -1,0 +1,151 @@
+\usepackage{times}
+\usepackage{latexsym}
+
+\usepackage{url}
+\renewcommand{\UrlFont}{\ttfamily\small}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+
+% Totally tabular!
+\usepackage{booktabs}
+
+\usepackage{graphicx}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+\usepackage{textcomp}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\softmax}{softmax}
+\DeclareMathOperator*{\logsumexp}{logsumexp}
+\DeclareMathOperator*{\hardmax}{hardmax}
+\DeclareMathOperator*{\entropy}{H}
+\DeclareMathOperator{\expectation}{\mathbb{E}}
+\DeclareMathOperator{\prob}{P}
+
+\usepackage{hyperref}
+\usepackage{cleveref}
+\def\sectionautorefname{Section}
+\def\subsectionautorefname{Section}
+
+% (From ACL style:)
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% TODO: get a better draft watermark than this lol
+% \usepackage{draftwatermark}
+% \SetWatermarkText{DRAFT}
+% \SetWatermarkScale{1}
+
+% fix up author superscripts
+\newcommand*\samethanks[1][\value{footnote}]{\footnotemark[#1]}
+\renewcommand*{\Affilfont}{\normalsize\normalfont}
+\renewcommand*{\Authfont}{\bfseries}
+\renewcommand\footnotemark{}
+\makeatletter
+\renewcommand\AB@authnote[1]{\rlap{\textsuperscript{\normalfont#1}}}
+\renewcommand\Authsep{,~~\,}
+\renewcommand\Authand{~~and~}
+\renewcommand\Authands{,~~and~}
+\makeatother
+% end fix up author superscripts
+
+% appendix autoref patch (\autoref subsections in appendix)
+% https://tex.stackexchange.com/questions/149807/autoref-subsections-in-appendix
+\usepackage{appendix}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\hyper@makecurrent}{%
+    \ifx\Hy@param\Hy@chapterstring
+        \let\Hy@param\Hy@chapapp
+    \fi
+}{%
+    \iftoggle{inappendix}{%true-branch
+        % list the names of all sectioning counters here
+        \@checkappendixparam{chapter}%
+        \@checkappendixparam{section}%
+        \@checkappendixparam{subsection}%
+        \@checkappendixparam{subsubsection}%
+        \@checkappendixparam{paragraph}%
+        \@checkappendixparam{subparagraph}%
+    }{}%
+}{}{\errmessage{failed to patch}}
+
+\newcommand*{\@checkappendixparam}[1]{%
+    \def\@checkappendixparamtmp{#1}%
+    \ifx\Hy@param\@checkappendixparamtmp
+        \let\Hy@param\Hy@appendixstring
+    \fi
+}
+\makeatletter
+
+\newtoggle{inappendix}
+\togglefalse{inappendix}
+
+\apptocmd{\appendix}{\toggletrue{inappendix}}{}{\errmessage{failed to patch}}
+\apptocmd{\subappendices}{\toggletrue{inappendix}}{}{\errmessage{failed to patch}}
+% end appendix autoref patch
+
+% fancy underline
+% https://alexwlchan.net/2017/10/latex-underlines/
+\usepackage{contour}
+\usepackage[normalem]{ulem}
+
+\renewcommand{\ULdepth}{1.8pt}
+\contourlength{0.8pt}
+
+\newcommand{\nuline}[1]{%
+  \uline{\phantom{#1}}%
+  \llap{\contour{white}{#1}}%
+}
+% end fancy underline
+
+
+\usepackage{todonotes}  % temporary - use this for margin notes in bubbles
+\usepackage[normalem]{ulem}  % for \sout
+\newif\ifcomments
+\commentstrue
+% \commentsfalse
+
+\ifcomments
+    \newcommand*{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+    \newcommand*{\tocite}[1]{(\textcolor{blue}{#1})}
+    \newcommand*{\tocitep}[1]{(\textcolor{blue}{#1})}
+    \newcommand*{\tocitet}[1]{\textcolor{blue}{#1}}
+    
+    \newcommand*{\julian}[1]{\textcolor{orange}{[JJM: #1]}}
+    \newcommand*{\ian}[1]{\textcolor{olive}{[IFT: #1]}}
+    \newcommand*{\jan}[1]{\textcolor{purple}{[JAB: #1]}}
+    
+    \definecolor{iansnotecolor}{RGB}{255, 218, 181}
+    \newcommand*{\iansidenote}[1]{
+        \todo[color=iansnotecolor, size=\footnotesize]{%
+        [\textbf{Ian:}] #1}%
+    }
+    
+    \newcommand*{\proposed}[1]{\textcolor{purple}{#1}}
+    \newcommand*{\maybedelete}[1]{\textcolor{red}{\sout{#1}}}
+    \newcommand{\punch}[0]{\includegraphics[width=.04\textwidth]{images/falconpunch.png}}
+\else
+    %%
+    % Disable user commands for submission or length check
+    \newcommand*{\TODO}[1]{}
+    \newcommand*{\tocite}[1]{}
+    \newcommand*{\tocitep}[1]{}
+    \newcommand*{\tocitet}[1]{}
+    
+    \newcommand*{\julian}[1]{}
+    \newcommand*{\ian}[1]{}
+    \newcommand*{\jan}[1]{}
+    \newcommand*{\iansidenote}[1]{}
+    
+    \newcommand*{\maybedelete}[1]{}
+    \newcommand*{\proposed}[1]{#1}
+\fi
