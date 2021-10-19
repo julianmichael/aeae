@@ -10,4 +10,4 @@ Start with `python scripts/download.py` from the base directory to download stuf
 
 ## Contents
 
-Project proposal (WIP) is under `proposal/`
+Completed project proposal is under `proposal/`.
