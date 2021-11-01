@@ -27,17 +27,16 @@ def show_progress(count, block_size, total_size):
 
 Dataset = namedtuple('Dataset', ['name', 'path', 'url', 'ext', 'description'])
 
-
+# NOTE: Anthology just an example now since we don't use it for bib entries
 datasets = [
     Dataset(
         name = 'ACL Anthology',
-        path = 'proposal/anthology.bib',
+        path = 'proposal/anthology.bib', # without `ext` (below)
         url = 'https://aclanthology.org/anthology.bib.gz',
-        ext = '.gz',
+        ext = '.gz', # or '.tar.gz' for tarballs, or '' otherwise
         description = "The latest ACL Anthology bibfile."
     ),
 ]
-# TODO: upload commented datasets to site; QA-SRL-GS, QADiscourse, and Frame-Aligned QA-SRL Bank.
 
 def get_dataset_option_prompt(num, dataset):
     if os.path.exists(dataset.path):
