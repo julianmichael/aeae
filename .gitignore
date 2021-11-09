@@ -139,3 +139,7 @@ auto/
 *.out
 *.pdf
 *.synctex.gz
+
+
+# Datasets
+datasets/

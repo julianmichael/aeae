@@ -29,12 +29,47 @@ Dataset = namedtuple('Dataset', ['name', 'path', 'url', 'ext', 'description'])
 
 # NOTE: Anthology just an example now since we don't use it for bib entries
 datasets = [
+    # Dataset(
+    #     name = 'ACL Anthology',
+    #     path = 'proposal/anthology.bib', # without `ext` (below)
+    #     url = 'https://aclanthology.org/anthology.bib.gz',
+    #     ext = '.gz', # or '.tar.gz' for tarballs, or '' otherwise
+    #     description = "The latest ACL Anthology bibfile."
+    # ),
     Dataset(
-        name = 'ACL Anthology',
-        path = 'proposal/anthology.bib', # without `ext` (below)
-        url = 'https://aclanthology.org/anthology.bib.gz',
-        ext = '.gz', # or '.tar.gz' for tarballs, or '' otherwise
-        description = "The latest ACL Anthology bibfile."
+        name = 'MultiNLI',
+        path = 'datasets/mnli', # without `ext` (below)
+        url = 'https://cims.nyu.edu/~sbowman/multinli/multinli_1.0.zip',
+        ext = '.zip',
+        description = "MultiNLI dataset."
+    ),
+    Dataset(
+        name = 'SNLI',
+        path = 'datasets/snli', # without `ext` (below)
+        url = 'https://nlp.stanford.edu/projects/snli/snli_1.0.zip',
+        ext = '.zip',
+        description = "Stanford NLI dataset."
+    ),
+    Dataset(
+        name = 'FEVER',
+        path = 'datasets/fever', # without `ext` (below)
+        url = 'https://s3-eu-west-1.amazonaws.com/fever.public/train.jsonl',
+        ext = '.jsonl',
+        description = "FEVER (Fact Extraction and VERification) Dataset."
+    ),
+    Dataset(
+        name = 'ANLI',
+        path = 'datasets/anli', # without `ext` (below)
+        url = 'https://dl.fbaipublicfiles.com/anli/anli_v1.0.zip',
+        ext = '.zip',
+        description = "Adversarial NLI dataset."
+    ),
+    Dataset(
+        name = 'ChaosNLI',
+        path = 'datasets/chaosnli',
+        url = 'https://www.dropbox.com/s/h4j7dqszmpt2679/chaosNLI_v1.0.zip',
+        ext = '.zip',
+        description = "ChaosNLI dataset."
     ),
 ]
 
@@ -59,22 +94,25 @@ def construct_prompt():
 
 def download_dataset(dataset):
     print("Downloading {}.".format(dataset.name))
-    if choice.ext in ['.tar', '.tar.gz']:
-        tarpath = choice.path + choice.ext
-        urllib.request.urlretrieve(choice.url, tarpath, show_progress)
+    if dataset.ext in ['.tar', '.tar.gz']:
+        tarpath = dataset.path + dataset.ext
+        urllib.request.urlretrieve(dataset.url, tarpath, show_progress)
         result = tarfile.open(tarpath)
-        result.extractall(os.path.dirname(choice.path))
+        result.extractall(os.path.dirname(dataset.path))
         result.close()
         os.remove(tarpath)
-    elif choice.ext == '.gz':
-        gzpath = choice.path + choice.ext
-        urllib.request.urlretrieve(choice.url, gzpath, show_progress)
+    elif dataset.ext == '.gz':
+        gzpath = dataset.path + dataset.ext
+        urllib.request.urlretrieve(dataset.url, gzpath, show_progress)
         with gzip.open(gzpath, 'rb') as f_in:
-            with open(choice.path, 'wb') as f_out:
+            with open(dataset.path, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
         os.remove(gzpath)
+    elif dataset.ext == '.zip':
+        #TODO @margsli
+       urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
     else:
-       urllib.request.urlretrieve(choice.url, choice.path, show_progress)
+       urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
     print("\nDownload complete: {}".format(dataset.path))
 
 should_refresh_prompt = True
@@ -95,18 +133,18 @@ while True:
                 download_dataset(dataset)
     else:
         try:
-            choice = datasets[int(response) - 1]
+            dataset = datasets[int(response) - 1]
         except ValueError or IndexError:
             print("Invalid option: {}".format(response))
             continue
-        if os.path.exists(choice.path):
-            print("Already downloaded at {}.".format(choice.path))
+        if os.path.exists(dataset.path):
+            print("Already downloaded at {}.".format(dataset.path))
             print("Re-download? [y/N] ", end='')
             shouldDownloadStr = input()
             if shouldDownloadStr.startswith("y") or \
                shouldDownloadStr.startswith("Y"):
-                download_dataset(choice)
+                download_dataset(dataset)
                 should_refresh_prompt = True
         else:
-            download_dataset(choice)
+            download_dataset(dataset)
             should_refresh_prompt = True
