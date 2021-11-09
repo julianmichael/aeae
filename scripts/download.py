@@ -6,6 +6,7 @@ import urllib.request
 import sys
 import time
 import tarfile
+import zipfile
 
 import gzip
 import shutil
@@ -51,11 +52,11 @@ datasets = [
         description = "Stanford NLI dataset."
     ),
     Dataset(
-        name = 'FEVER',
-        path = 'datasets/fever', # without `ext` (below)
+        name = 'FEVER train',
+        path = 'datasets/fever/train.jsonl', # without `ext` (below)
         url = 'https://s3-eu-west-1.amazonaws.com/fever.public/train.jsonl',
-        ext = '.jsonl',
-        description = "FEVER (Fact Extraction and VERification) Dataset."
+        ext = '',
+        description = "FEVER (Fact Extraction and VERification) Dataset -- train split."
     ),
     Dataset(
         name = 'ANLI',
@@ -67,7 +68,7 @@ datasets = [
     Dataset(
         name = 'ChaosNLI',
         path = 'datasets/chaosnli',
-        url = 'https://www.dropbox.com/s/h4j7dqszmpt2679/chaosNLI_v1.0.zip',
+        url = 'https://www.dropbox.com/s/h4j7dqszmpt2679/chaosNLI_v1.0.zip?dl=1',
         ext = '.zip',
         description = "ChaosNLI dataset."
     ),
@@ -95,6 +96,7 @@ def construct_prompt():
 def download_dataset(dataset):
     print("Downloading {}.".format(dataset.name))
     if dataset.ext in ['.tar', '.tar.gz']:
+        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
         tarpath = dataset.path + dataset.ext
         urllib.request.urlretrieve(dataset.url, tarpath, show_progress)
         result = tarfile.open(tarpath)
@@ -102,6 +104,7 @@ def download_dataset(dataset):
         result.close()
         os.remove(tarpath)
     elif dataset.ext == '.gz':
+        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
         gzpath = dataset.path + dataset.ext
         urllib.request.urlretrieve(dataset.url, gzpath, show_progress)
         with gzip.open(gzpath, 'rb') as f_in:
@@ -109,10 +112,15 @@ def download_dataset(dataset):
                 shutil.copyfileobj(f_in, f_out)
         os.remove(gzpath)
     elif dataset.ext == '.zip':
-        #TODO @margsli
-       urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
+        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
+        zippath = dataset.path + dataset.ext
+        urllib.request.urlretrieve(dataset.url, zippath, show_progress)
+        with zipfile.ZipFile(zippath,"r") as zip_ref:
+            zip_ref.extractall(dataset.path)
+        os.remove(zippath)
     else:
-       urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
+        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
+        urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
     print("\nDownload complete: {}".format(dataset.path))
 
 should_refresh_prompt = True
