@@ -39,35 +39,70 @@ datasets = [
     # ),
     Dataset(
         name = 'MultiNLI',
-        path = 'datasets/mnli', # without `ext` (below)
+        path = 'data/raw_data/mnli', # without `ext` (below)
         url = 'https://cims.nyu.edu/~sbowman/multinli/multinli_1.0.zip',
         ext = '.zip',
         description = "MultiNLI dataset."
     ),
     Dataset(
         name = 'SNLI',
-        path = 'datasets/snli', # without `ext` (below)
+        path = 'data/raw_data/snli', # without `ext` (below)
         url = 'https://nlp.stanford.edu/projects/snli/snli_1.0.zip',
         ext = '.zip',
         description = "Stanford NLI dataset."
     ),
     Dataset(
-        name = 'FEVER train',
-        path = 'datasets/fever/train.jsonl', # without `ext` (below)
-        url = 'https://s3-eu-west-1.amazonaws.com/fever.public/train.jsonl',
-        ext = '',
-        description = "FEVER (Fact Extraction and VERification) Dataset -- train split."
+        name = 'FEVER',
+        path = 'data/raw_data/nli_fever', # without `ext` (below)
+        url = 'https://www.dropbox.com/s/hylbuaovqwo2zav/nli_fever.zip?dl=1',
+        ext = '.zip',
+        description = "FEVER (Fact Extraction and VERification) Dataset."
     ),
+    # Dataset(
+    #     name = 'FEVER train',
+    #     path = 'data/raw_data/nli_fever/train.jsonl', # without `ext` (below)
+    #     url = 'https://s3-eu-west-1.amazonaws.com/fever.public/train.jsonl',
+    #     ext = '',
+    #     description = "FEVER (Fact Extraction and VERification) Dataset -- train split."
+    # ),
+    # Dataset(
+    #     name = 'FEVER dev',
+    #     path = 'data/raw_data/nli_fever/dev.jsonl', # without `ext` (below)
+    #     url = 'https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_dev.jsonl',
+    #     ext = '',
+    #     description = "FEVER (Fact Extraction and VERification) Dataset -- shared task dev split."
+    # ),
+    # Dataset(
+    #     name = 'FEVER paper dev',
+    #     path = 'data/raw_data/nli_fever/paper_dev.jsonl', # without `ext` (below)
+    #     url = 'https://s3-eu-west-1.amazonaws.com/fever.public/paper_dev.jsonl',
+    #     ext = '',
+    #     description = "FEVER (Fact Extraction and VERification) Dataset -- paper dev split."
+    # ),
+    # Dataset(
+    #     name = 'FEVER test',
+    #     path = 'data/raw_data/nli_fever/test.jsonl', # without `ext` (below)
+    #     url = 'https://s3-eu-west-1.amazonaws.com/fever.public/shared_task_test.jsonl',
+    #     ext = '',
+    #     description = "FEVER (Fact Extraction and VERification) Dataset -- shared task test split."
+    # ),
+    # Dataset(
+    #     name = 'FEVER paper test',
+    #     path = 'data/raw_data/nli_fever/paper_test.jsonl', # without `ext` (below)
+    #     url = 'https://s3-eu-west-1.amazonaws.com/fever.public/paper_test.jsonl',
+    #     ext = '',
+    #     description = "FEVER (Fact Extraction and VERification) Dataset -- paper test split."
+    # ),
     Dataset(
         name = 'ANLI',
-        path = 'datasets/anli', # without `ext` (below)
+        path = 'data/raw_data/anli', # without `ext` (below)
         url = 'https://dl.fbaipublicfiles.com/anli/anli_v1.0.zip',
         ext = '.zip',
         description = "Adversarial NLI dataset."
     ),
     Dataset(
         name = 'ChaosNLI',
-        path = 'datasets/chaosnli',
+        path = 'data/raw_data/chaosnli',
         url = 'https://www.dropbox.com/s/h4j7dqszmpt2679/chaosNLI_v1.0.zip?dl=1',
         ext = '.zip',
         description = "ChaosNLI dataset."
@@ -95,8 +130,9 @@ def construct_prompt():
 
 def download_dataset(dataset):
     print("Downloading {}.".format(dataset.name))
-    if dataset.ext in ['.tar', '.tar.gz']:
+    if os.path.dirname(dataset.path):
         os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
+    if dataset.ext in ['.tar', '.tar.gz']:
         tarpath = dataset.path + dataset.ext
         urllib.request.urlretrieve(dataset.url, tarpath, show_progress)
         result = tarfile.open(tarpath)
@@ -104,7 +140,6 @@ def download_dataset(dataset):
         result.close()
         os.remove(tarpath)
     elif dataset.ext == '.gz':
-        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
         gzpath = dataset.path + dataset.ext
         urllib.request.urlretrieve(dataset.url, gzpath, show_progress)
         with gzip.open(gzpath, 'rb') as f_in:
@@ -112,14 +147,12 @@ def download_dataset(dataset):
                 shutil.copyfileobj(f_in, f_out)
         os.remove(gzpath)
     elif dataset.ext == '.zip':
-        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
         zippath = dataset.path + dataset.ext
         urllib.request.urlretrieve(dataset.url, zippath, show_progress)
         with zipfile.ZipFile(zippath,"r") as zip_ref:
             zip_ref.extractall(dataset.path)
         os.remove(zippath)
     else:
-        os.makedirs(os.path.dirname(dataset.path), exist_ok=True)
         urllib.request.urlretrieve(dataset.url, dataset.path, show_progress)
     print("\nDownload complete: {}".format(dataset.path))
 
