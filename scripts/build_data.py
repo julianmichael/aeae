@@ -257,10 +257,10 @@ def build_data():
         processed_data_root.mkdir()
     build_snli(processed_data_root)
     build_mnli(processed_data_root)
-    # build_fever_nli(processed_data_root)
-    # for round in [1, 2, 3]:
-    #     build_anli(processed_data_root, round)
-    # build_chaos_nli(processed_data_root)
+    build_fever_nli(processed_data_root)
+    for round in [1, 2, 3]:
+        build_anli(processed_data_root, round)
+    build_chaos_nli(processed_data_root)
     print("NLI data built!")
 
 
