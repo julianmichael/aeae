@@ -19,14 +19,17 @@ def maybe_collapse_label(label: str, collapse: bool):
     Helper function that optionally collapses the "contradiction" and "neutral" labels
     into "non-entailment".
     """
-    assert label in ["contradiction", "neutral", "entailment"]
-    if collapse and label in ["contradiction", "neutral"]:
-        return "non-entailment"
+    # assert label in ["contradiction", "neutral", "entailment"]
+    # if collapse and label in ["contradiction", "neutral"]:
+    #     return "non-entailment"
+    # return label
+    assert label in ['c', 'n', 'e']
+    if collapse and label in ['c', 'n']:
+        return 'nc'
     return label
 
-
-@DatasetReader.register("anli")
-class AnliReader(DatasetReader):
+@DatasetReader.register("nli")
+class NliReader(DatasetReader):
     """
     Reads a file from one of our (postprocessed) NLI datasets.
 
@@ -73,18 +76,16 @@ class AnliReader(DatasetReader):
 
     @overrides
     def _read(self, file_path: str):
-        raise NotImplementedError
-
-        # TODO @margsli needs to be tested
         # if `file_path` is a URL, redirect to the cache
         file_path = cached_path(file_path)
-        with open(file_path, "r") as snli_file:
-            example_iter = (json.loads(line) for line in snli_file)
+        with open(file_path, "r") as nli_file:
+            example_iter = (json.loads(line) for line in nli_file)
             for example in self.shard_iterable(example_iter):
-                label = example.get["label"]
+                label = example.get("label")
                 premise = example["premise"]
                 hypothesis = example["hypothesis"]
-                yield self.text_to_instance(premise, hypothesis, label)
+                uid = example['uid'] # needed to trace to ChaosNLI annotations
+                yield self.text_to_instance(premise, hypothesis, label, uid)
 
     @overrides
     def text_to_instance(
@@ -92,13 +93,15 @@ class AnliReader(DatasetReader):
         premise: str,
         hypothesis: str,
         label: str = None,
+        uid: str = None,
     ) -> Instance:
-        raise NotImplementedError
-        
-        # TODO @margsli needs to be tested
         fields: Dict[str, Field] = {}
         premise = self._tokenizer.tokenize(premise)
         hypothesis = self._tokenizer.tokenize(hypothesis)
+
+        metadata = {
+            "uid": uid,
+        }
 
         if self._combine_input_fields:
             tokens = self._tokenizer.add_special_tokens(premise, hypothesis)
@@ -109,16 +112,16 @@ class AnliReader(DatasetReader):
             fields["premise"] = TextField(premise_tokens)
             fields["hypothesis"] = TextField(hypothesis_tokens)
 
-            metadata = {
+            metadata.update({
                 "premise_tokens": [x.text for x in premise_tokens],
                 "hypothesis_tokens": [x.text for x in hypothesis_tokens],
-            }
-            fields["metadata"] = MetadataField(metadata)
+            })
 
         if label:
             maybe_collapsed_label = maybe_collapse_label(label, self.collapse_labels)
             fields["label"] = LabelField(maybe_collapsed_label)
 
+        fields["metadata"] = MetadataField(metadata)
         return Instance(fields)
 
     @overrides

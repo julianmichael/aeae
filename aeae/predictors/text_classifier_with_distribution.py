@@ -46,8 +46,10 @@ class TextClassifierWithDistributionPredictor(Predictor):
     def predictions_to_labeled_instances(
         self, instance: Instance, outputs: Dict[str, numpy.ndarray]
     ) -> List[Instance]:
-        raise NotImplementedError
-        # new_instance = instance.duplicate()
-        # label = numpy.argmax(outputs["probs"])
-        # new_instance.add_field("label", LabelField(int(label), skip_indexing=True))
-        # return [new_instance]
+        # TODO @margsli test this
+        new_instance = instance.duplicate()
+        label = numpy.argmax(outputs["probs"])
+        label_probs = outputs["probs"]
+        new_instance.add_field("model_label", LabelField(int(label), skip_indexing=True))
+        new_instance.add_field("model_label_probs", LabelField(label_probs, skip_indexing=True))
+        return [new_instance]
