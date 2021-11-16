@@ -50,6 +50,6 @@ class TextClassifierWithDistributionPredictor(Predictor):
         new_instance = instance.duplicate()
         label = numpy.argmax(outputs["probs"])
         label_probs = outputs["probs"]
-        new_instance.add_field("model_label", LabelField(int(label), skip_indexing=True))
+        new_instance.add_field("model_label", LabelField(int(label), skip_indexing=True)) # TODO @margsli assumes the label is an int
         new_instance.add_field("model_label_probs", LabelField(label_probs, skip_indexing=True))
         return [new_instance]
