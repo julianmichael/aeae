@@ -1,7 +1,26 @@
 # Originally copied from: https://github.com/allenai/allennlp-models/blob/main/training_config/pair_classification/mnli_roberta.jsonnet
 
-local transformer_model = "roberta-base";
-local transformer_dim = 768;
+local transformer_model = "roberta-large";
+local transformer_dim = 1024;
+
+local data_prefix = "data/build";
+local non_adversarial_datasets = ["snli", "mnli", "fever_nli"];
+local adversarial_datasets = ["anli/r1", "anli/r2", "anli/r3"];
+local all_datasets = non_adversarial_datasets + adversarial_datasets;
+local tiny_datasets = ["tiny"];
+
+local mode = std.extVar("MODE");
+local dataset_modes = {
+  tiny: tiny_datasets,
+  classical: non_adversarial_datasets,
+  adversarial: adversarial_datasets,
+  all: all_datasets
+};
+local datasets = dataset_modes[mode];
+
+
+local datapaths = std.map(function(p) data_prefix + "/" + p, datasets);
+local split(split_name) = std.join(",", std.map(function(x) x + "/" + split_name + ".jsonl", datapaths));
 
 {
   "dataset_reader": {
@@ -19,9 +38,9 @@ local transformer_dim = 768;
       }
     }
   },
-  "train_data_path": "data/build/tiny.jsonl",
-  "validation_data_path": "data/build/tiny.jsonl",
-  "test_data_path": "data/build/tiny.jsonl",
+  "train_data_path": split("train"),
+  "validation_data_path": split("dev"),
+  "test_data_path": split("test"),
   "model": {
     "type": "nli_classifier",
     "text_field_embedder": {
@@ -36,12 +55,6 @@ local transformer_dim = 768;
     "seq2vec_encoder": {
        "type": "cls_pooler",
        "embedding_dim": transformer_dim,
-    },
-    "feedforward": {
-      "input_dim": transformer_dim,
-      "num_layers": 1,
-      "hidden_dims": transformer_dim,
-      "activations": "tanh"
     },
     "dropout": 0.1,
     "namespace": "tags"

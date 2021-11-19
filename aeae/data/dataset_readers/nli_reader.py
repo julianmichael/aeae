@@ -77,15 +77,17 @@ class NliReader(DatasetReader):
     @overrides
     def _read(self, file_path: str):
         # if `file_path` is a URL, redirect to the cache
-        file_path = cached_path(file_path)
-        with open(file_path, "r") as nli_file:
-            example_iter = (json.loads(line) for line in nli_file)
-            for example in self.shard_iterable(example_iter):
-                label = example.get("label")
-                premise = example["premise"]
-                hypothesis = example["hypothesis"]
-                uid = example['uid'] # needed to trace to ChaosNLI annotations
-                yield self.text_to_instance(premise, hypothesis, label, uid)
+        file_paths = file_path.split(",")
+        for file_path in file_paths:
+            file_path = cached_path(file_path)
+            with open(file_path, "r") as nli_file:
+                example_iter = (json.loads(line) for line in nli_file)
+                for example in self.shard_iterable(example_iter):
+                    label = example.get("label")
+                    premise = example["premise"]
+                    hypothesis = example["hypothesis"]
+                    uid = example['uid'] # needed to trace to ChaosNLI annotations
+                    yield self.text_to_instance(premise, hypothesis, label, uid)
 
     @overrides
     def text_to_instance(
