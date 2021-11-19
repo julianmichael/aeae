@@ -1,1 +1,1 @@
-from aeae.predictors.text_classifier_with_distribution import TextClassifierWithDistributionPredictor
+from aeae.predictors.nli_classifier import NliClassifierPredictor

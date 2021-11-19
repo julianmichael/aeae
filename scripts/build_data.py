@@ -4,6 +4,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from pathlib import Path
 import os
+import subprocess
 
 SRC_ROOT = Path(os.path.dirname(os.path.realpath(__file__)))
 DATA_ROOT = SRC_ROOT.parent
@@ -261,6 +262,8 @@ def build_data():
     for round in [1, 2, 3]:
         build_anli(processed_data_root, round)
     build_chaos_nli(processed_data_root)
+    # make tiny test data
+    subprocess.run(["head", "-n5", processed_data_root + "/snli/dev.jsonl", ">", processed_data_root + "/tiny.jsonl"])
     print("NLI data built!")
 
 

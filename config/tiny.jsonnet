@@ -23,7 +23,7 @@ local transformer_dim = 768;
   "validation_data_path": "data/build/tiny.jsonl",
   "test_data_path": "data/build/tiny.jsonl",
   "model": {
-    "type": "basic_classifier",
+    "type": "nli_classifier",
     "text_field_embedder": {
       "token_embedders": {
         "tokens": {
