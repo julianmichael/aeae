@@ -1,2 +1,1 @@
-allennlp==2.7.0
-overrides==6.1.0
+allennlp==2.8.0

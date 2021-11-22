@@ -4,6 +4,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from pathlib import Path
 import os
+import subprocess
 
 SRC_ROOT = Path(os.path.dirname(os.path.realpath(__file__)))
 DATA_ROOT = SRC_ROOT.parent
@@ -245,12 +246,12 @@ def build_chaos_nli(path: Path, version=1.0):
         o_sub = json_utils.load_jsonl(DATA_ROOT / f"data/raw_data/chaosnli/chaosNLI_v{version}/chaosNLI_{subdataset}.jsonl")
         d_sub = chaos_nli2std_format(o_sub, subdataset)
 
-        print(f"Chaos {subdataset} Train size:", len(d_sub))
+        print(f"Chaos {subdataset} size:", len(d_sub))
 
         if not (data_root_path / f"{subdataset}").exists():
             (data_root_path / f"{subdataset}").mkdir()
 
-        json_utils.save_jsonl(d_sub, data_root_path / f"{subdataset}" / 'train.jsonl')
+        json_utils.save_jsonl(d_sub, data_root_path / f"{subdataset}" / 'dev.jsonl')
 
 
 def build_data():
@@ -263,6 +264,21 @@ def build_data():
     for round in [1, 2, 3]:
         build_anli(processed_data_root, round)
     build_chaos_nli(processed_data_root)
+
+    # make tiny data for testing
+    tiny_data_root = processed_data_root / "tiny"
+    tiny_data_root.mkdir(exist_ok = True)
+    def make_tiny_split(split):
+        out_file = tiny_data_root / "{}.jsonl".format(split)
+        print("Saving tiny dataset: {}".format(out_file))
+        with open(out_file, "w") as f:
+            subprocess.run([
+                "head", "-n5",
+                processed_data_root / "snli" / "{}.jsonl".format(split)
+            ], stdout = f)
+    for split in ["train", "dev", "test"]:
+        make_tiny_split(split)
+
     print("NLI data built!")
 
 

@@ -53,6 +53,13 @@ def human_expected_acc(instances):
     ]
 
 
+def human_expected_agreement(instances):
+    return [
+        sum([math.pow(v / sum(i['chaos_label_counter'].values), 2) for v in i['chaos_label_counter'].values])
+        for i in instances
+    ]
+
+
 def majority_vote_acc(instances):
     return [i['human_label'] == i['model_label'] for i in instances]
 
