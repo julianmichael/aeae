@@ -20,10 +20,11 @@ datasets.
 
 To sanity-check model training, run
 ```
-MODE=tiny allennlp train config/basic.jsonnet --include-package aeae -s save/tiny
+MODE=tiny allennlp train config/basic.jsonnet --include-package aeae -o '{"trainer.cuda_device": -1}' -s save/tiny
 ```
-This will train a model on a tiny subset of MNLI. Changing MODE accordingly uses different data
-sources (see [basic.jsonnet](config/basic.jsonnet)).
+This will train a model on a tiny subset of MNLI using CPU. Changing MODE accordingly uses
+different data sources (see [basic.jsonnet](config/basic.jsonnet)) the cuda device determines 
+which GPU is used.
 
 ## Documentation
 

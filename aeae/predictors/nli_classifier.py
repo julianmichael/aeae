@@ -23,13 +23,13 @@ class NliClassifierPredictor(Predictor):
     Registered as a `Predictor` with name "nli_classifier".
     """
 
-    def predict(self, premise: str, hypothesis: str) -> JsonDict:
-        return self.predict_json({"premise": premise, "hypothesis": hypothesis})
+    def predict(self, premise: str, hypothesis: str, uid: str) -> JsonDict:
+        return self.predict_json({"uid": uid, "premise": premise, "hypothesis": hypothesis})
 
     @overrides
     def _json_to_instance(self, json_dict: JsonDict) -> Instance:
         """
-        Expects JSON that looks like `{"premise": "...", "hypothesis": "..."}`.
+        Expects JSON that looks like `{"uid": "...", premise": "...", "hypothesis": "..."}`.
         Runs the underlying model.
         """
         premise = json_dict["premise"]
@@ -42,4 +42,4 @@ class NliClassifierPredictor(Predictor):
             tokenizer = SpacyTokenizer()
             premise = tokenizer.tokenize(premise)
             hypothesis = tokenizer.tokenize(hypothesis)
-        return self._dataset_reader.text_to_instance(premise, hypothesis)
+        return self._dataset_reader.text_to_instance(premise, hypothesis, uid=json_dict["uid"])

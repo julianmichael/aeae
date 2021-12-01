@@ -136,7 +136,8 @@ class NliClassifier(Model):
         logits = self._classification_layer(embedded_text)
         probs = torch.nn.functional.softmax(logits, dim=-1)
 
-        output_dict = {"logits": logits, "probs": probs}
+        uids = list(map(lambda x: x["uid"], metadata))
+        output_dict = {"uid": uids, "logits": logits, "probs": probs}
         # @julianmichael: can add this back for debugging if necessary
         # output_dict["token_ids"] = util.get_token_ids_from_text_field_tensors(tokens)
         if label is not None:
