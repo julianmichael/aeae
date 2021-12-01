@@ -91,6 +91,7 @@ def fever_nli2std_format(d_list, filter_invalid=True):
         formatted_item['premise']: str = item["context"]
         formatted_item['hypothesis']: str = item["query"]
         formatted_item['label']: str = fever_label2std_label[item["label"]]
+        formatted_item['all_labels']: List[str] = [fever_label2std_label[item["label"]]]
         if filter_invalid and formatted_item['label'] == 'o':
             continue  # Skip example with invalid label.
 
@@ -107,6 +108,7 @@ def a_nli2std_format(d_list, filter_invalid=True):
         formatted_item['hypothesis']: str = item["hypothesis"]
         formatted_item['label']: str = anli_label2std_label[item["label"]]
         formatted_item['reason']: str = item["reason"]
+        formatted_item['all_labels']: List[str] = [anli_label2std_label[item["label"]]]
         if filter_invalid and formatted_item['label'] == 'o':
             continue  # Skip example with invalid label.
 
@@ -122,14 +124,14 @@ def chaos_nli2std_format(d_list, subdataset, filter_invalid=True):
         formatted_item['premise']: str = item["example"]["premise"]
         formatted_item['hypothesis']: str = item["example"]["hypothesis"]
         label_dict = {}
-        if subdataset == 'alphanli':
-            raise NotImplementedError("no alphaNLI yet")
-        elif subdataset == 'mnli_m':
-            label_dict = mnli_label2std_label
-        elif subdataset == 'snli':
-            label_dict = snli_label2std_label
+        # if subdataset == 'alphanli':
+        #     raise NotImplementedError("no alphaNLI yet")
+        # elif subdataset == 'mnli_m':
+        #     label_dict = mnli_label2std_label
+        # elif subdataset == 'snli':
+        #     label_dict = snli_label2std_label
         formatted_item['old_label']: str = item["old_label"]
-        formatted_item['all_old_labels']: str = [label_dict[l] for l in item.get('old_labels', [])]
+        formatted_item['all_old_labels']: str = item.get('old_labels', [])
         formatted_item['label_counter']: Dict = item["label_counter"]
         formatted_item['label']: str = item["majority_label"]
         if filter_invalid and (formatted_item['old_label'] == 'o' or formatted_item['label'] == 'o'):
@@ -181,6 +183,7 @@ def build_mnli(path: Path):
     json_utils.save_jsonl(d_train, data_root_path / 'train.jsonl')
     json_utils.save_jsonl(d_mm_dev, data_root_path / 'mm_dev.jsonl')
     json_utils.save_jsonl(d_m_test, data_root_path / 'm_dev.jsonl')
+    # TODO: symlink dev and test to m_dev and mm_dev for consistency
 
 
 def build_fever_nli(path: Path):

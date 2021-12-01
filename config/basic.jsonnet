@@ -18,7 +18,6 @@ local dataset_modes = {
 };
 local datasets = dataset_modes[mode];
 
-
 local datapaths = std.map(function(p) data_prefix + "/" + p, datasets);
 local split(split_name) = std.join(",", std.map(function(x) x + "/" + split_name + ".jsonl", datapaths));
 
@@ -62,12 +61,13 @@ local split(split_name) = std.join(",", std.map(function(x) x + "/" + split_name
   "data_loader": {
     "batch_sampler": {
       "type": "bucket",
-      "batch_size" : 16
+      "batch_size" : 8
     }
   },
   "trainer": {
     "num_epochs": 10,
     "validation_metric": "+accuracy",
+    "patience": 5,
     "learning_rate_scheduler": {
       "type": "slanted_triangular",
       "cut_frac": 0.06
