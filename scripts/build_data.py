@@ -183,7 +183,8 @@ def build_mnli(path: Path):
     json_utils.save_jsonl(d_train, data_root_path / 'train.jsonl')
     json_utils.save_jsonl(d_mm_dev, data_root_path / 'mm_dev.jsonl')
     json_utils.save_jsonl(d_m_test, data_root_path / 'm_dev.jsonl')
-    # TODO: symlink dev and test to m_dev and mm_dev for consistency
+    os.symlink(data_root_path / 'm_dev.jsonl', data_root_path / 'dev.jsonl')
+    os.symlink(data_root_path / 'mm_dev.jsonl', data_root_path / 'test.jsonl')
 
 
 def build_fever_nli(path: Path):
