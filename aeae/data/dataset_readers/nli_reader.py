@@ -84,10 +84,11 @@ class NliReader(DatasetReader):
                 example_iter = (json.loads(line) for line in nli_file)
                 for example in self.shard_iterable(example_iter):
                     label = example.get("label")
-                    premise = example["premise"]
-                    hypothesis = example["hypothesis"]
-                    uid = example['uid'] # needed to trace to ChaosNLI annotations
-                    yield self.text_to_instance(premise, hypothesis, label, uid)
+                    if label is not "h":
+                        premise = example["premise"]
+                        hypothesis = example["hypothesis"]
+                        uid = example['uid'] # needed to trace to ChaosNLI annotations
+                        yield self.text_to_instance(premise, hypothesis, label, uid)
 
     @overrides
     def text_to_instance(
