@@ -1,1 +1,2 @@
 allennlp==2.8.0
+seaborn==0.11.2
