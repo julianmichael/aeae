@@ -17,8 +17,7 @@ def setup_args():
     parser.add_argument(
         '-mcs', '--metrics', type=str, default='all', help='metrics to calculate: \'all\' or comma separated list of any of:')
     parser.add_argument('-o', '--output-folder', type=str, default=None, help='folder to save results and plot to')  
-    args = parser.parse_args()
-
+    return parser.parse_args()
 
 def load_task_examples(task_file):
     examples = {}
@@ -29,22 +28,23 @@ def load_task_examples(task_file):
     return examples
 
 
-def load_output_instances(prediction_files):
-    instances_dict = []
+def load_output_instances(prediction_files_str):
+    prediction_files = prediction_files_str.split(",")
+    instances_dict = {}
     for prediction_file in prediction_files:
         filename = os.path.basename(prediction_file).split('.')[0]
         instances = []
         with open(prediction_file, 'r') as pf:
             for l in pf:
                 instances.append(json.loads(l.strip()))
-        instances_dict[filename] = instances
+        instances_dict[prediction_file] = instances
     return instances_dict
 
 
 def expected_acc(instances):
     return [
         i['human_label_counter'].get(i['max_label'], 0) /
-        sum(i['human_label_counter'].values)
+        sum(i['human_label_counter'].values())
         for i in instances
     ]
 
@@ -52,14 +52,14 @@ def expected_acc(instances):
 def human_expected_acc(instances):
     return [
         i['human_label_counter'].get(i['human_label'], 0) /
-        sum(i['human_label_counter'].values)
+        sum(i['human_label_counter'].values())
         for i in instances
     ]
 
 
 def human_expected_agreement(instances):
     return [
-        sum([math.pow(v / sum(i['human_label_counter'].values), 2) for v in i['human_label_counter'].values])
+        sum([math.pow(v / sum(i['human_label_counter'].values()), 2) for v in i['human_label_counter'].values()])
         for i in instances
     ]
 
@@ -69,7 +69,7 @@ def majority_vote_acc(instances):
 
 
 def kl_div(instances):
-    return [scipy.stats.entropy(i['model_label_probs'], i['human_label_probs']) for i in instances]
+    return [scipy.stats.entropy(i['human_label_probs'], i['model_label_probs']) for i in instances]
 
 
 def model_ppl(instances):
@@ -112,21 +112,20 @@ def eval_model(task_examples, output_instances_dict, metrics, out_folder):
                 instance['label_probs'][l]
                 for l in LABEL_ORDER
             ]
-    
+
         results = {}
         for metric in metrics:
             results[metric] = METRIC_TO_FUNCTION[metric](output_instances)
             print('{}: mean value {}\n'.format(metric, str(mean(results[metric]))))
 
         if out_folder:
-            with open(os.path.join(out_folder, '{}_eval_results.txt'.format(instances_name))) as wf:
+            with open(os.path.join(out_folder, '{}_eval_results.txt'.format(instances_name)), mode='w') as wf:
                 for metric_name, vals in results.items():
                     wf.write('{}: mean value {}\n'.format(metric_name, str(mean(vals))))
             with open(os.path.join(out_folder, '{}_eval_results.json'.format(instances_name))) as wf:
                 for metric_name, vals in results.items():
                     wf.write(json.dumps(results))
-        results_dict[instances_name] = results
-    
+
     return results_dict
 
 
@@ -145,8 +144,7 @@ def main():
     task_examples = load_task_examples(args.task_file)
 
     results_dict = eval_model(task_examples, output_instances_dict, metrics, args.output_folder)
-    if args.plot:
-        plot.plot_all_available(results_dict, args.output_folder)
+    plot.plot_all_available(results_dict, args.output_folder)
 
 
 if __name__ == '__main__':
