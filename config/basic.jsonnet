@@ -59,13 +59,15 @@ local split(split_name) = std.join(",", std.map(function(x) x + "/" + split_name
     "namespace": "tags"
   },
   "data_loader": {
+    "batches_per_epoch": 10000,
     "batch_sampler": {
       "type": "bucket",
-      "batch_size" : 8
+      "batch_size" : 1
     }
   },
   "trainer": {
-    "num_epochs": 10,
+    "num_gradient_accumulation_steps": 8,
+    "num_epochs": 50,
     "validation_metric": "+accuracy",
     "patience": 5,
     "learning_rate_scheduler": {

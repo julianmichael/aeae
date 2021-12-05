@@ -13,7 +13,7 @@ def setup_args():
     parser = ArgumentParser()
     parser.add_argument('-m', '--models', type=str, default=None, help='comma-separated list of model file')
     parser.add_argument('-p', '--predictions-files', type=str, default=None, help='comma-separated list of files of predictor outputs')
-    parser.add_argument('-tf', '--task-file', default=None, help='file containing task to compute evals on')
+    parser.add_argument('-tf', '--task-file', default=None, help='file containing task to compute evals on') # TODO @margsli generalize to multiple tasks?
     parser.add_argument(
         '-mcs', '--metrics', type=str, default='all', help='metrics to calculate: \'all\' or comma separated list of any of:')
     parser.add_argument('-o', '--output-folder', type=str, default=None, help='folder to save results and plot to')  
@@ -32,7 +32,7 @@ def load_task_examples(task_file):
 def load_output_instances(prediction_files):
     instances_dict = []
     for prediction_file in prediction_files:
-        filename = ''
+        filename = os.path.basename(prediction_file).split('.')[0]
         instances = []
         with open(prediction_file, 'r') as pf:
             for l in pf:
@@ -122,7 +122,9 @@ def eval_model(task_examples, output_instances_dict, metrics, out_folder):
             with open(os.path.join(out_folder, '{}_eval_results.txt'.format(instances_name))) as wf:
                 for metric_name, vals in results.items():
                     wf.write('{}: mean value {}\n'.format(metric_name, str(mean(vals))))
-        
+            with open(os.path.join(out_folder, '{}_eval_results.json'.format(instances_name))) as wf:
+                for metric_name, vals in results.items():
+                    wf.write(json.dumps(results))
         results_dict[instances_name] = results
     
     return results_dict

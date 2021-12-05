@@ -140,10 +140,10 @@ auto/
 *.pdf
 *.synctex.gz
 
-
 # Datasets
 data/
 datasets/
 
-# Model checkpoints
+# Model checkpoints & logs
 save/
+tmp*
