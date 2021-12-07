@@ -12,7 +12,7 @@ LABEL_ORDER = ['n', 'e', 'c']
 def setup_args():
     parser = ArgumentParser()
     parser.add_argument('-m', '--models', type=str, default=None, help='comma-separated list of model file')
-    parser.add_argument('-p', '--predictions-files', type=str, default=None, help='comma-separated list of files of predictor outputs')
+    parser.add_argument('-p', '--prediction-files', type=str, default=None, help='comma-separated list of files of predictor outputs')
     parser.add_argument('-tf', '--task-file', default=None, help='file containing task to compute evals on') # TODO @margsli generalize to multiple tasks?
     parser.add_argument(
         '-mcs', '--metrics', type=str, default='all', help='metrics to calculate: \'all\' or comma separated list of any of:')
@@ -32,12 +32,15 @@ def load_output_instances(prediction_files_str):
     prediction_files = prediction_files_str.split(",")
     instances_dict = {}
     for prediction_file in prediction_files:
-        filename = os.path.basename(prediction_file).split('.')[0]
+        normalized_path = os.path.normpath(prediction_file)
+        path_components = normalized_path.split(os.sep)
+        model_name = path_components[-3]
+        task_name = path_components[-1].split('.')[0]
         instances = []
         with open(prediction_file, 'r') as pf:
             for l in pf:
                 instances.append(json.loads(l.strip()))
-        instances_dict[prediction_file] = instances
+        instances_dict[model_name] = instances
     return instances_dict
 
 
@@ -98,14 +101,14 @@ def eval_model(task_examples, output_instances_dict, metrics, out_folder):
             uid = instance['uid']
             task_example = task_examples.get(uid)
             instance['human_label'] = task_example['label']
-            instance['human_all_labels'] = task_example['all_labels']
+            instance['human_all_labels'] = task_example.get('all_labels')
             instance['human_old_label'] = task_example.get('old_label')
             instance['human_old_all_labels'] = task_example.get('all_old_labels')
             instance['human_label_counter'] = task_example.get('label_counter')
             if instance['human_label_counter'] is None:
                 instance['human_label_counter'] = Counter(task_example['all_labels'])
             instance['human_label_probs'] = [
-                instance['human_label_counter'][l] / sum(instance['human_label_counter'].values()) 
+                instance['human_label_counter'].get(l, 0) / sum(instance['human_label_counter'].values()) 
                 for l in LABEL_ORDER
             ]
             instance['model_label_probs'] = [
@@ -118,11 +121,12 @@ def eval_model(task_examples, output_instances_dict, metrics, out_folder):
             results[metric] = METRIC_TO_FUNCTION[metric](output_instances)
             print('{}: mean value {}\n'.format(metric, str(mean(results[metric]))))
 
+        results_dict[instances_name] = results
         if out_folder:
             with open(os.path.join(out_folder, '{}_eval_results.txt'.format(instances_name)), mode='w') as wf:
                 for metric_name, vals in results.items():
                     wf.write('{}: mean value {}\n'.format(metric_name, str(mean(vals))))
-            with open(os.path.join(out_folder, '{}_eval_results.json'.format(instances_name))) as wf:
+            with open(os.path.join(out_folder, '{}_eval_results.json'.format(instances_name)), mode='w') as wf:
                 for metric_name, vals in results.items():
                     wf.write(json.dumps(results))
 
@@ -133,7 +137,7 @@ def main():
     args = setup_args()
     if args.models and args.prediction_files or not args.models and not args.prediction_files:
         raise RuntimeError("provide exactly one of: model file, predictions file")
-    output_instances = []
+    output_instances_dict = {}
     if args.models:
         pass #run predictor
     else:
