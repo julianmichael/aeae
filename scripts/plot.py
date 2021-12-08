@@ -98,15 +98,19 @@ def plot_agreements(metrics_dict, folder):
     plt.clf()
 
 
-def plot_kldivs(metrics_dict, folder):
+from math import exp
+
+def plot_kldivs(metrics_dict, folder, exponentiate=False):
     results_dict = {'kl_div': [], 'human_entropy': [], 'model': []}
     for name, metrics in metrics_dict.items():
         human_entropy = metrics.get('human_entropy')
         kl_div = metrics.get('kl_div')
         model = [name] * len(human_entropy)
         if human_entropy:
-            results_dict['human_entropy'].extend(human_entropy)
-            results_dict['kl_div'].extend(kl_div)
+            hent = map(exp, human_entropy) if exponentiate else human_entropy
+            results_dict['human_entropy'].extend(hent)
+            kl = map(exp, kl_div) if exponentiate else kl_div
+            results_dict['kl_div'].extend(kl)
             results_dict['model'].extend(model)
     sns.set_theme()
     df = pd.DataFrame(results_dict)
@@ -116,11 +120,13 @@ def plot_kldivs(metrics_dict, folder):
         height=5,
         scatter_kws={"s": 5, "alpha": 0.3}
     )
-    g.set_axis_labels("Human Entropy", "KL-Divergence")
+    y_label = "Human Perplexity" if exponentiate else "Human Entropy"
+    x_label = "Exp(KL)" if exponentiate else "KL-Divergence"
+    g.set_axis_labels(y_label, x_label)
+    filename = "kldiv_exp.png" if exponentiate else "kldiv.png"
     os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'kldiv.png'))
+    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), filename))
     plt.clf()
-
 
 def plot_ppls(metrics_dict, folder):
     results_dict = {'human_ppl': [], 'model_ppl': [], 'model': []}
@@ -149,7 +155,8 @@ def plot_ppls(metrics_dict, folder):
 def plot_all_available(metrics_dict, folder):
     plot_accs(metrics_dict, folder)
     plot_agreements(metrics_dict, folder)
-    plot_kldivs(metrics_dict, folder)
+    plot_kldivs(metrics_dict, folder, exponentiate = False)
+    plot_kldivs(metrics_dict, folder, exponentiate = True)
     plot_ppls(metrics_dict, folder)
 
 
