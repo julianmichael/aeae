@@ -54,6 +54,7 @@ def plot_accs(metrics_dict, folder):
     g.set_xticklabels(labels)
     os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
     plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'acc.png'))
+    plt.clf()
 
 
 def plot_agreements(metrics_dict, folder):
@@ -94,6 +95,31 @@ def plot_agreements(metrics_dict, folder):
     g.set_xticklabels(labels)
     os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
     plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'agreement.png'))
+    plt.clf()
+
+
+def plot_kldivs(metrics_dict, folder):
+    results_dict = {'kl_div': [], 'human_entropy': [], 'model': []}
+    for name, metrics in metrics_dict.items():
+        human_entropy = metrics.get('human_entropy')
+        kl_div = metrics.get('kl_div')
+        model = [name] * len(human_entropy)
+        if human_entropy:
+            results_dict['human_entropy'].extend(human_entropy)
+            results_dict['kl_div'].extend(kl_div)
+            results_dict['model'].extend(model)
+    sns.set_theme()
+    df = pd.DataFrame(results_dict)
+    g = sns.lmplot(
+        data=df,
+        x="human_entropy", y="kl_div", hue="model",
+        height=5,
+        scatter_kws={"s": 5, "alpha": 0.3}
+    )
+    g.set_axis_labels("Human Entropy", "KL-Divergence")
+    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'kldiv.png'))
+    plt.clf()
 
 
 def plot_ppls(metrics_dict, folder):
@@ -112,22 +138,25 @@ def plot_ppls(metrics_dict, folder):
         data=df,
         x="human_ppl", y="model_ppl", hue="model",
         height=5,
-        scatter_kws={"s": 20, "alpha": 0.5}
+        scatter_kws={"s": 5, "alpha": 0.3}
     )
     g.set_axis_labels("Human Perplexity", "Model Perplexity")
     os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
     plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl.png'))
+    plt.clf()
 
 
 def plot_all_available(metrics_dict, folder):
     plot_accs(metrics_dict, folder)
     plot_agreements(metrics_dict, folder)
+    plot_kldivs(metrics_dict, folder)
     plot_ppls(metrics_dict, folder)
 
 
 def main():
     args = setup_args()
     results = {}
+    task_name = ''
     for results_file in args.results_files.split(','):
         normalized_path = os.path.normpath(results_file)
         path_components = normalized_path.split(os.sep)
@@ -135,7 +164,9 @@ def main():
         task_name = path_components[-1].split('.')[0]
         with open(results_file, 'r') as f:
             results[model_name] = json.loads(f.read().strip())
-    plot_all_available(results, args.plot_folder)
+    plot_task_folder = os.path.join(args.plot_folder, task_name)
+    os.makedirs(plot_task_folder, exist_ok=True)
+    plot_all_available(results, plot_task_folder)
     
 
 if __name__ == '__main__':

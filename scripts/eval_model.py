@@ -83,6 +83,10 @@ def human_ppl(instances):
     return [math.exp(scipy.stats.entropy(i['human_label_probs'])) for i in instances]
 
 
+def human_entropy(instances):
+    return [scipy.stats.entropy(i['human_label_probs']) for i in instances]
+
+
 METRIC_TO_FUNCTION = {
         'expected_acc': expected_acc,
         'human_expected_acc': human_expected_acc,
@@ -91,6 +95,7 @@ METRIC_TO_FUNCTION = {
         'kl_div': kl_div,
         'model_ppl': model_ppl,
         'human_ppl': human_ppl,
+        'human_entropy': human_entropy,
     }
 
 
