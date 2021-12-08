@@ -98,8 +98,24 @@ METRIC_TO_FUNCTION = {
     }
 
 
-def eval_model(task_examples, output_instances_dict, metrics, out_folder):
+def eval_model(task_name, task_examples, output_instances_dict, metrics, out_folder):
     results_dict = {}
+
+    human_instances = []
+    for uid, task_example in task_examples.items():
+        label_probs = {
+            l: task_example['label_counter'].get(l, 0) / sum(task_example['label_counter'].values())
+            for l in LABEL_ORDER
+        }
+        instance = {
+            'uid': uid,
+            'label_probs': label_probs,
+            'max_label': max(list(label_probs.items()), key=lambda x: x[1])[0]
+        }
+        human_instances.append(instance)
+
+    output_instances_dict[('human', task_name)] = human_instances
+
     for instances_name, output_instances in output_instances_dict.items():
         for instance in output_instances:
             uid = instance['uid']
@@ -153,7 +169,7 @@ def main():
     task_examples = load_task_examples(args.task_file)
     output_folder = os.path.join(args.output_folder, task_name)
     os.makedirs(output_folder, exist_ok=True)
-    results_dict = eval_model(task_examples, output_instances_dict, metrics, output_folder)
+    results_dict = eval_model(task_name, task_examples, output_instances_dict, metrics, output_folder)
     plot.plot_all_available(results_dict, output_folder)
 
 

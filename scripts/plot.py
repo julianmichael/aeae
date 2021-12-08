@@ -53,19 +53,19 @@ def plot_accs(metrics_dict, folder):
             results_dict['Human Accuracy Bin'].extend(human_acc_bins)
             results_dict['Accuracy'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
 
-    human_accs = metrics.get('human_expected_acc')
-    binned_model_accs = {i:[] for i in range(len(bin_ends) - 1)}
-    for ha in human_accs:
-        bin = find_bin(ha)
-        binned_model_accs[bin].append(ha)
-    binned_avg_model_acc = {i:binned_model_accs[i] for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
-    human_acc_bins = [[i]*len(binned_avg_model_acc[i]) for i in range(len(bin_ends) - 1)]
-    human_acc_bins = [item for sublist in human_acc_bins for item in sublist]
-    model = ['human'] * len(human_acc_bins)
-    if binned_avg_model_acc:
-        results_dict['Model'].extend(model)
-        results_dict['Human Accuracy Bin'].extend(human_acc_bins)
-        results_dict['Accuracy'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
+    # human_accs = metrics.get('human_expected_acc')
+    # binned_model_accs = {i:[] for i in range(len(bin_ends) - 1)}
+    # for ha in human_accs:
+    #     bin = find_bin(ha)
+    #     binned_model_accs[bin].append(ha)
+    # binned_avg_model_acc = {i:binned_model_accs[i] for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
+    # human_acc_bins = [[i]*len(binned_avg_model_acc[i]) for i in range(len(bin_ends) - 1)]
+    # human_acc_bins = [item for sublist in human_acc_bins for item in sublist]
+    # model = ['human'] * len(human_acc_bins)
+    # if binned_avg_model_acc:
+    #     results_dict['Model'].extend(model)
+    #     results_dict['Human Accuracy Bin'].extend(human_acc_bins)
+    #     results_dict['Accuracy'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
 
     sns.set_theme()
     df = pd.DataFrame(results_dict)
@@ -110,19 +110,19 @@ def plot_agreements(metrics_dict, folder):
             results_dict['Human Agreement Bin'].extend(human_agreement_bins)
             results_dict['Accuracy'].extend([item for sublist in binned_avg_model_agreement.values() for item in sublist])
 
-    human_agreements = metrics.get('human_expected_agreement')
-    binned_model_acc = {i:[] for i in range(len(bin_ends) - 1)}
-    for ha in human_agreements:
-        bin = find_bin(ha)
-        binned_model_acc[bin].append(ha)
-    binned_avg_model_agreement = {i:binned_model_acc[i] for i in range(len(bin_ends) - 1) if len(binned_model_acc[i]) > 0}
-    human_agreement_bins = [[i]*len(binned_avg_model_agreement[i]) for i in range(len(bin_ends) - 1)]
-    human_agreement_bins = [item for sublist in human_agreement_bins for item in sublist]
-    model = ['human'] * len(human_agreement_bins)
-    if binned_avg_model_agreement:
-        results_dict['Model'].extend(model)
-        results_dict['Human Agreement Bin'].extend(human_agreement_bins)
-        results_dict['Accuracy'].extend([item for sublist in binned_avg_model_agreement.values() for item in sublist])
+    # human_agreements = metrics.get('human_expected_agreement')
+    # binned_model_acc = {i:[] for i in range(len(bin_ends) - 1)}
+    # for ha in human_agreements:
+    #     bin = find_bin(ha)
+    #     binned_model_acc[bin].append(ha)
+    # binned_avg_model_agreement = {i:binned_model_acc[i] for i in range(len(bin_ends) - 1) if len(binned_model_acc[i]) > 0}
+    # human_agreement_bins = [[i]*len(binned_avg_model_agreement[i]) for i in range(len(bin_ends) - 1)]
+    # human_agreement_bins = [item for sublist in human_agreement_bins for item in sublist]
+    # model = ['human'] * len(human_agreement_bins)
+    # if binned_avg_model_agreement:
+    #     results_dict['Model'].extend(model)
+    #     results_dict['Human Agreement Bin'].extend(human_agreement_bins)
+    #     results_dict['Accuracy'].extend([item for sublist in binned_avg_model_agreement.values() for item in sublist])
 
     sns.set_theme()
     df = pd.DataFrame(results_dict)
@@ -182,13 +182,6 @@ def plot_kldivs_joint(metrics_dict, folder, exponentiate=False):
     sns.set_theme()
     df = pd.DataFrame(results_dict)
 
-    # g = sns.lmplot(
-    #     data=df,
-    #     x="human_entropy", y="kl_div", hue="model",
-    #     height=5,
-    #     scatter_kws={"s": 5, "alpha": 0.3}
-    # )
-
     g = sns.jointplot(
         data=df,
         x="human_entropy", y="kl_div",
@@ -211,11 +204,6 @@ def plot_kldivs_joint(metrics_dict, folder, exponentiate=False):
             ax=g.ax_joint,
             truncate=False
         )
-    # g.plot_joint(sns.regplot)
-    # g.set_axis_labels("Human Perplexity", "Model Perplexity")
-    # os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    # plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl_joint.png'))
-    # plt.clf()
 
     y_label = "Human Perplexity" if exponentiate else "Human Entropy"
     x_label = "Exp(KL)" if exponentiate else "KL-Divergence"
@@ -315,7 +303,7 @@ def main():
     plot_task_folder = os.path.join(args.plot_folder, task_name)
     os.makedirs(plot_task_folder, exist_ok=True)
     plot_all_available(results, plot_task_folder)
-    
+
 
 if __name__ == '__main__':
     main()
