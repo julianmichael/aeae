@@ -7,6 +7,10 @@ import seaborn as sns
 from statistics import mean
 
 
+model_order = [
+    "classical", "adversarial", "all", "human"
+]
+
 def setup_args():
     parser = ArgumentParser()
     parser.add_argument('-m', '--model', type=str, default=None, help='model file')
@@ -15,7 +19,6 @@ def setup_args():
     args = parser.parse_args()
     return args
 
-    
 def plot_accs(metrics_dict, folder):
     bin_high = 1
     bin_low = 1/3
@@ -45,7 +48,7 @@ def plot_accs(metrics_dict, folder):
 
     sns.set_theme()
     df = pd.DataFrame(results_dict)
-    g = sns.pointplot(x="Human Accuracy Bin", y="Accuracy", hue="Model", data=df, ci=None, palette="muted", height=4,
+    g = sns.pointplot(x="Human Accuracy Bin", y="Accuracy", hue="Model", hue_order=model_order, data=df, ci=None, palette="muted", height=4,
             scatter_kws={"s": 50, "alpha": 1})
     labels = []
     for i, (low, high) in enumerate(zip(bin_ends, bin_ends[1:])):
@@ -151,6 +154,47 @@ def plot_ppls(metrics_dict, folder):
     plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl.png'))
     plt.clf()
 
+def plot_ppls_joint(metrics_dict, folder):
+    results_dict = {'human_ppl': [], 'model_ppl': [], 'model': []}
+    for name, metrics in metrics_dict.items():
+        human_ppl = metrics.get('human_ppl')
+        model_ppl = metrics.get('model_ppl')
+        model = [name] * len(model_ppl)
+        if model_ppl and human_ppl:
+            results_dict['human_ppl'].extend(human_ppl)
+            results_dict['model_ppl'].extend(model_ppl)
+            results_dict['model'].extend(model)
+    sns.set_theme()
+    df = pd.DataFrame(results_dict)
+
+    g = sns.jointplot(
+        data=df,
+        x="human_ppl", y="model_ppl",
+        hue="model",
+        hue_order=model_order,
+        xlim=(0.99, 3.01),
+        ylim=(0.99, 3.01),
+        height=5,
+        joint_kws={"s": 4, "alpha": 0.7},
+        marginal_kws={"clip": [1.0, 3.0]}
+    )
+    for _, gr in sorted(list(df.groupby("model")), key = lambda x: model_order.index(x[0])):
+        sns.regplot(
+            data = gr,
+            x="human_ppl", y="model_ppl",
+            # xlim=(0.9, 3.1),
+            # ylim=(0.9, 3.1),
+            # height=5,
+            scatter=False,
+            ax=g.ax_joint,
+            truncate=False
+        )
+    # g.plot_joint(sns.regplot)
+    g.set_axis_labels("Human Perplexity", "Model Perplexity")
+    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl_joint.png'))
+    plt.clf()
+
 
 def plot_all_available(metrics_dict, folder):
     plot_accs(metrics_dict, folder)
@@ -158,6 +202,7 @@ def plot_all_available(metrics_dict, folder):
     plot_kldivs(metrics_dict, folder, exponentiate = False)
     plot_kldivs(metrics_dict, folder, exponentiate = True)
     plot_ppls(metrics_dict, folder)
+    plot_ppls_joint(metrics_dict, folder)
 
 
 def main():
