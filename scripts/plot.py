@@ -6,6 +6,10 @@ import pandas as pd
 import seaborn as sns
 from statistics import mean
 
+from math import exp, log
+
+import code
+import pdb
 
 model_order = [
     "classical", "adversarial", "all", "human"
@@ -101,8 +105,6 @@ def plot_agreements(metrics_dict, folder):
     plt.clf()
 
 
-from math import exp
-
 def plot_kldivs(metrics_dict, folder, exponentiate=False):
     results_dict = {'kl_div': [], 'human_entropy': [], 'model': []}
     for name, metrics in metrics_dict.items():
@@ -127,6 +129,64 @@ def plot_kldivs(metrics_dict, folder, exponentiate=False):
     x_label = "Exp(KL)" if exponentiate else "KL-Divergence"
     g.set_axis_labels(y_label, x_label)
     filename = "kldiv_exp.png" if exponentiate else "kldiv.png"
+    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), filename))
+    plt.clf()
+
+def plot_kldivs_joint(metrics_dict, folder, exponentiate=False):
+    results_dict = {'kl_div': [], 'human_entropy': [], 'model': []}
+    for name, metrics in metrics_dict.items():
+        human_entropy = metrics.get('human_entropy')
+        kl_div = metrics.get('kl_div')
+        model = [name] * len(human_entropy)
+        if human_entropy:
+            hent = map(exp, human_entropy) if exponentiate else human_entropy
+            results_dict['human_entropy'].extend(hent)
+            kl = map(exp, kl_div) if exponentiate else kl_div
+            results_dict['kl_div'].extend(kl)
+            results_dict['model'].extend(model)
+    sns.set_theme()
+    df = pd.DataFrame(results_dict)
+
+    # g = sns.lmplot(
+    #     data=df,
+    #     x="human_entropy", y="kl_div", hue="model",
+    #     height=5,
+    #     scatter_kws={"s": 5, "alpha": 0.3}
+    # )
+
+    g = sns.jointplot(
+        data=df,
+        x="human_entropy", y="kl_div",
+        hue="model",
+        hue_order=model_order,
+        xlim=(-0.01, log(3) + 0.01),
+        ylim=(-0.01, 10.01),
+        height=5,
+        joint_kws={"s": 4, "alpha": 0.7},
+        marginal_kws={"clip": [0.0, 10.0]}
+    )
+    for _, gr in sorted(list(df.groupby("model")), key = lambda x: model_order.index(x[0])):
+        sns.regplot(
+            data = gr,
+            x="human_entropy", y="kl_div",
+            # xlim=(0.9, 3.1),
+            # ylim=(0.9, 3.1),
+            # height=5,
+            scatter=False,
+            ax=g.ax_joint,
+            truncate=False
+        )
+    # g.plot_joint(sns.regplot)
+    # g.set_axis_labels("Human Perplexity", "Model Perplexity")
+    # os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
+    # plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl_joint.png'))
+    # plt.clf()
+
+    y_label = "Human Perplexity" if exponentiate else "Human Entropy"
+    x_label = "Exp(KL)" if exponentiate else "KL-Divergence"
+    g.set_axis_labels(y_label, x_label)
+    filename = "kldiv_joint_exp.png" if exponentiate else "kldiv_joint.png"
     os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
     plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), filename))
     plt.clf()
@@ -201,6 +261,8 @@ def plot_all_available(metrics_dict, folder):
     plot_agreements(metrics_dict, folder)
     plot_kldivs(metrics_dict, folder, exponentiate = False)
     plot_kldivs(metrics_dict, folder, exponentiate = True)
+    plot_kldivs_joint(metrics_dict, folder, exponentiate = False)
+    plot_kldivs_joint(metrics_dict, folder, exponentiate = True)
     plot_ppls(metrics_dict, folder)
     plot_ppls_joint(metrics_dict, folder)
 
