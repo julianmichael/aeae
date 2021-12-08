@@ -40,8 +40,8 @@ def load_output_instances(prediction_files_str):
         with open(prediction_file, 'r') as pf:
             for l in pf:
                 instances.append(json.loads(l.strip()))
-        instances_dict[model_name] = instances
-    return instances_dict
+        instances_dict[(model_name, task_name)] = instances
+    return instances_dict, task_name
 
 
 def expected_acc(instances):
@@ -143,17 +143,19 @@ def main():
     if args.models and args.prediction_files or not args.models and not args.prediction_files:
         raise RuntimeError("provide exactly one of: model file, predictions file")
     output_instances_dict = {}
+    task_name = ''
     if args.models:
         pass #run predictor
     else:
-        output_instances_dict = load_output_instances(args.prediction_files)
+        output_instances_dict, task_name = load_output_instances(args.prediction_files)
     metrics = args.metrics.split(',')
     if metrics[0] == 'all':
         metrics = METRIC_TO_FUNCTION.keys()
     task_examples = load_task_examples(args.task_file)
-
-    results_dict = eval_model(task_examples, output_instances_dict, metrics, args.output_folder)
-    plot.plot_all_available(results_dict, args.output_folder)
+    output_folder = os.path.join(args.output_folder, task_name)
+    os.makedirs(output_folder, exists_ok=True)
+    results_dict = eval_model(task_examples, output_instances_dict, metrics, output_folder)
+    plot.plot_all_available(results_dict, output_folder)
 
 
 if __name__ == '__main__':

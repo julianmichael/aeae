@@ -15,7 +15,7 @@ def setup_args():
     args = parser.parse_args()
     return args
 
-    
+
 def plot_accs(metrics_dict, folder):
     bin_high = 1
     bin_low = 1/3
@@ -23,37 +23,54 @@ def plot_accs(metrics_dict, folder):
     bin_ends = [round(bin_low + i / num_bins * (bin_high - bin_low), 2) for i in range(num_bins + 1)]
     def find_bin(value):
         i = 0
+
         while value > bin_ends[i + 1]:
             i += 1
         return i
     results_dict = {'Human Accuracy Bin': [], 'Accuracy': [], 'Model': []}
 
-    for name, metrics in metrics_dict.items():
+    for (name, task_name), metrics in metrics_dict.items():
         human_accs = metrics.get('human_expected_acc')
         model_accs = metrics.get('expected_acc')
         binned_model_accs = {i:[] for i in range(len(bin_ends) - 1)}
         for ha, ma in zip(human_accs, model_accs):
             bin = find_bin(ha)
             binned_model_accs[bin].append(ma)
-        binned_avg_model_acc = {i:mean(binned_model_accs[i]) for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
-        human_acc_bins = [i for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0]
+        binned_avg_model_acc = {i:binned_model_accs[i] for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
+        human_acc_bins = [[i]*len(binned_avg_model_acc[i]) for i in range(len(bin_ends) - 1)]
+        human_acc_bins = [item for sublist in human_acc_bins for item in sublist]
         model = [name] * len(human_acc_bins)
         if binned_avg_model_acc:
             results_dict['Model'].extend(model)
             results_dict['Human Accuracy Bin'].extend(human_acc_bins)
-            results_dict['Accuracy'].extend(binned_avg_model_acc.values())
+            results_dict['Accuracy'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
+
+    human_accs = metrics.get('human_expected_acc')
+    binned_model_accs = {i:[] for i in range(len(bin_ends) - 1)}
+    for ha in human_accs:
+        bin = find_bin(ha)
+        binned_model_accs[bin].append(ha)
+    binned_avg_model_acc = {i:binned_model_accs[i] for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
+    human_acc_bins = [[i]*len(binned_avg_model_acc[i]) for i in range(len(bin_ends) - 1)]
+    human_acc_bins = [item for sublist in human_acc_bins for item in sublist]
+    model = ['human'] * len(human_acc_bins)
+    if binned_avg_model_acc:
+        results_dict['Model'].extend(model)
+        results_dict['Human Accuracy Bin'].extend(human_acc_bins)
+        results_dict['Accuracy'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
 
     sns.set_theme()
     df = pd.DataFrame(results_dict)
-    g = sns.pointplot(x="Human Accuracy Bin", y="Accuracy", hue="Model", data=df, ci=None, palette="muted", height=4,
-            scatter_kws={"s": 50, "alpha": 1})
+    g = sns.lineplot(x="Human Accuracy Bin", y="Accuracy", hue="Model", data=df, palette="muted", style="Model", markers=["o", "o", "o", "o"], dashes=False, markeredgecolor=None)
     labels = []
-    for i, (low, high) in enumerate(zip(bin_ends, bin_ends[1:])):
+    str_bin_ends = [str(num).lstrip('0') for num in bin_ends]
+    for i, (low, high) in enumerate(zip(str_bin_ends, str_bin_ends[1:])):
         if i in results_dict['Human Accuracy Bin']:
-            labels.append('[' + str(low)  + '-' + str(high) + ']')
-    g.set_xticklabels(labels)
-    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'acc.png'))
+            labels.append('[' + low  + '-' + high + ']')
+    g.set_xticks(range(len(labels)))
+    g.set_xticklabels(labels, fontsize=8)
+    os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'acc.png'))
     plt.clf()
 
 
@@ -69,38 +86,54 @@ def plot_agreements(metrics_dict, folder):
         return i
     results_dict = {'Human Agreement Bin': [], 'Accuracy': [], 'Model': []}
 
-    for name, metrics in metrics_dict.items():
-        human_agreement = metrics.get('human_expected_agreement')
-        model_agreement = metrics.get('expected_acc')
-        binned_model_agreement = {i:[] for i in range(len(bin_ends) - 1)}
-        for ha, ma in zip(human_agreement, model_agreement):
+    for (name, task_name), metrics in metrics_dict.items():
+        human_agreements = metrics.get('human_expected_agreement')
+        model_acc = metrics.get('expected_acc')
+        binned_model_acc = {i:[] for i in range(len(bin_ends) - 1)}
+        for ha, ma in zip(human_agreements, model_acc):
             bin = find_bin(ha)
-            binned_model_agreement[bin].append(ma)
-        binned_avg_model_acc = {i:mean(binned_model_agreement[i]) for i in range(len(bin_ends) - 1) if len(binned_model_agreement[i]) > 0}
-        human_agg_bins = [i for i in range(len(bin_ends) - 1) if len(binned_model_agreement[i]) > 0]
-        model = [name] * len(human_agg_bins)
-        if binned_avg_model_acc:
+            binned_model_acc[bin].append(ma)
+        binned_avg_model_agreement = {i:binned_model_acc[i] for i in range(len(bin_ends) - 1) if len(binned_model_acc[i]) > 0}
+        human_agreement_bins = [[i]*len(binned_avg_model_agreement[i]) for i in range(len(bin_ends) - 1)]
+        human_agreement_bins = [item for sublist in human_agreement_bins for item in sublist]
+        model = [name] * len(human_agreement_bins)
+        if binned_avg_model_agreement:
             results_dict['Model'].extend(model)
-            results_dict['Human Agreement Bin'].extend(human_agg_bins)
-            results_dict['Accuracy'].extend(binned_avg_model_acc.values())
+            results_dict['Human Agreement Bin'].extend(human_agreement_bins)
+            results_dict['Accuracy'].extend([item for sublist in binned_avg_model_agreement.values() for item in sublist])
+
+    human_agreements = metrics.get('human_expected_agreement')
+    binned_model_acc = {i:[] for i in range(len(bin_ends) - 1)}
+    for ha in human_agreements:
+        bin = find_bin(ha)
+        binned_model_acc[bin].append(ha)
+    binned_avg_model_agreement = {i:binned_model_acc[i] for i in range(len(bin_ends) - 1) if len(binned_model_acc[i]) > 0}
+    human_agreement_bins = [[i]*len(binned_avg_model_agreement[i]) for i in range(len(bin_ends) - 1)]
+    human_agreement_bins = [item for sublist in human_agreement_bins for item in sublist]
+    model = ['human'] * len(human_agreement_bins)
+    if binned_avg_model_agreement:
+        results_dict['Model'].extend(model)
+        results_dict['Human Agreement Bin'].extend(human_agreement_bins)
+        results_dict['Accuracy'].extend([item for sublist in binned_avg_model_agreement.values() for item in sublist])
 
     sns.set_theme()
     df = pd.DataFrame(results_dict)
-    g = sns.pointplot(x="Human Agreement Bin", y="Accuracy", hue="Model", data=df, ci=None, palette="muted", height=4,
-            scatter_kws={"s": 20, "alpha": 0.5})
+    g = sns.lineplot(x="Human Agreement Bin", y="Accuracy", hue="Model", data=df, palette="muted", style="Model", markers=["o", "o", "o", "o"], dashes=False, markeredgecolor=None)
     labels = []
-    for i, (low, high) in enumerate(zip(bin_ends, bin_ends[1:])):
+    str_bin_ends = [str(num).lstrip('0') for num in bin_ends]
+    for i, (low, high) in enumerate(zip(str_bin_ends, str_bin_ends[1:])):
         if i in results_dict['Human Agreement Bin']:
-            labels.append('[' + str(low)  + '-' + str(high) + ']')
-    g.set_xticklabels(labels)
-    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'agreement.png'))
+            labels.append('[' + low  + '-' + high + ']')
+    g.set_xticks(range(len(labels)))
+    g.set_xticklabels(labels, fontsize=8)
+    os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'agreement.png'))
     plt.clf()
 
 
 def plot_kldivs(metrics_dict, folder):
     results_dict = {'kl_div': [], 'human_entropy': [], 'model': []}
-    for name, metrics in metrics_dict.items():
+    for (name, task_name), metrics in metrics_dict.items():
         human_entropy = metrics.get('human_entropy')
         kl_div = metrics.get('kl_div')
         model = [name] * len(human_entropy)
@@ -114,17 +147,17 @@ def plot_kldivs(metrics_dict, folder):
         data=df,
         x="human_entropy", y="kl_div", hue="model",
         height=5,
-        scatter_kws={"s": 5, "alpha": 0.3}
+        scatter_kws={"s": 3, "alpha": 0.3}
     )
     g.set_axis_labels("Human Entropy", "KL-Divergence")
-    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'kldiv.png'))
+    os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'kldiv.png'))
     plt.clf()
 
 
 def plot_ppls(metrics_dict, folder):
     results_dict = {'human_ppl': [], 'model_ppl': [], 'model': []}
-    for name, metrics in metrics_dict.items():
+    for (name, task_name), metrics in metrics_dict.items():
         human_ppl = metrics.get('human_ppl')
         model_ppl = metrics.get('model_ppl')
         model = [name] * len(model_ppl)
@@ -138,11 +171,11 @@ def plot_ppls(metrics_dict, folder):
         data=df,
         x="human_ppl", y="model_ppl", hue="model",
         height=5,
-        scatter_kws={"s": 5, "alpha": 0.3}
+        scatter_kws={"s": 3, "alpha": 0.3}
     )
     g.set_axis_labels("Human Perplexity", "Model Perplexity")
-    os.makedirs(os.path.join(folder, '_'.join(metrics_dict.keys())), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join(metrics_dict.keys()), 'ppl.png'))
+    os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'ppl.png'))
     plt.clf()
 
 
@@ -163,7 +196,7 @@ def main():
         model_name = path_components[-3]
         task_name = path_components[-1].split('.')[0]
         with open(results_file, 'r') as f:
-            results[model_name] = json.loads(f.read().strip())
+            results[(model_name, task_name)] = json.loads(f.read().strip())
     plot_task_folder = os.path.join(args.plot_folder, task_name)
     os.makedirs(plot_task_folder, exist_ok=True)
     plot_all_available(results, plot_task_folder)
