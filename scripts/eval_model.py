@@ -27,7 +27,6 @@ def load_task_examples(task_file):
             examples[json_dict['uid']] = json_dict
     return examples
 
-
 def load_output_instances(prediction_files_str):
     prediction_files = prediction_files_str.split(",")
     instances_dict = {}
@@ -153,7 +152,7 @@ def main():
         metrics = METRIC_TO_FUNCTION.keys()
     task_examples = load_task_examples(args.task_file)
     output_folder = os.path.join(args.output_folder, task_name)
-    os.makedirs(output_folder, exists_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
     results_dict = eval_model(task_examples, output_instances_dict, metrics, output_folder)
     plot.plot_all_available(results_dict, output_folder)
 
