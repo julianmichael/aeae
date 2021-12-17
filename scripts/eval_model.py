@@ -65,7 +65,6 @@ def human_expected_agreement(instances):
         for i in instances
     ]
 
-
 def majority_vote_acc(instances):
     return [i['human_label'] == i['max_label'] for i in instances]
 
@@ -73,6 +72,8 @@ def majority_vote_acc(instances):
 def kl_div(instances):
     return [scipy.stats.entropy(i['human_label_probs'], i['model_label_probs']) for i in instances]
 
+def model_confidence(instances):
+    return [max(i['model_label_probs']) for i in instances]
 
 def model_ppl(instances):
     return [math.exp(scipy.stats.entropy(i['model_label_probs'])) for i in instances]
@@ -95,6 +96,7 @@ METRIC_TO_FUNCTION = {
         'model_ppl': model_ppl,
         'human_ppl': human_ppl,
         'human_entropy': human_entropy,
+        'model_confidence': model_confidence,
     }
 
 

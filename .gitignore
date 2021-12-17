@@ -147,3 +147,4 @@ datasets/
 # Model checkpoints & logs
 save/
 tmp*
+.DS_Store
