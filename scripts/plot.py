@@ -374,10 +374,89 @@ def plot_calibration_curve(metrics_dict, folder):
     g.ax_joint.set_xticks(tick_centers)
     g.ax_joint.set_xticklabels(labels, fontsize=8)
     os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
-    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'calibration_curve.png'), bbox_inches='tight')
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'calibration_curve_expectation.png'), bbox_inches='tight')
     plt.clf()
 
 
+def plot_calibration_curve_plurality(metrics_dict, folder):
+    bin_high = 1
+    bin_low = 1/3
+    num_bins = 8
+    bin_ends = [round(bin_low + i / num_bins * (bin_high - bin_low), 2) for i in range(num_bins + 1)]
+
+    labels = []
+    tick_centers = []
+    str_bin_ends = [str(num).lstrip('0') for num in bin_ends]
+    for i, (low, high) in enumerate(zip(str_bin_ends, str_bin_ends[1:])):
+        # if i in results_dict['Human Accuracy in Expectation']:
+        labels.append('[' + low  + '-' + high + ']')
+        tick_centers.append((float(low) + float(high)) / 2)
+
+    def find_bin(value):
+        i = 0
+
+        while value > bin_ends[i + 1]:
+            i += 1
+        return i
+    results_dict = {'Model Confidence': [], 'Accuracy Against Plurality': [], 'Model': []}
+    big_results_dict = {'Model Confidence': [], 'Model': []}
+
+    for (name, task_name), metrics in metrics_dict.items():
+        human_accs = metrics.get('model_confidence')
+        model_accs = metrics.get('majority_vote_acc')
+        binned_model_accs = {i:[] for i in range(len(bin_ends) - 1)}
+        for ha, ma in zip(human_accs, model_accs):
+            bin = find_bin(ha)
+            binned_model_accs[bin].append(ma)
+        binned_avg_model_acc = {i:binned_model_accs[i] for i in range(len(bin_ends) - 1) if len(binned_model_accs[i]) > 0}
+        human_acc_bins = [[i]*len(binned_avg_model_acc[i]) for i in range(len(bin_ends) - 1)]
+        human_acc_bins = [tick_centers[item] for sublist in human_acc_bins for item in sublist]
+        model = [name] * len(human_acc_bins)
+        if binned_avg_model_acc:
+            big_results_dict['Model Confidence'].extend(human_accs)
+            big_results_dict['Model'].extend(model)
+            results_dict['Model'].extend(model)
+            results_dict['Model Confidence'].extend(human_acc_bins)
+            results_dict['Accuracy Against Plurality'].extend([item for sublist in binned_avg_model_acc.values() for item in sublist])
+
+    sns.set_theme()
+    df = pd.DataFrame(results_dict)
+    fine_grained_df = pd.DataFrame(big_results_dict)
+
+    g = sns.JointGrid(
+        data=df,
+        x="Model Confidence",
+        y="Accuracy Against Plurality",
+        hue="Model",
+        hue_order=model_order,
+        )
+    g.figure.delaxes(g.ax_marg_y)
+    g.plot_joint(
+        sns.lineplot,
+        **{
+          "data": df,
+          "palette": "muted",
+          "style": "Model",
+          "markers": ["o", "o", "o", "o"],
+          "dashes": False,
+          "markeredgecolor": None
+        }
+    )
+    sns.kdeplot(
+        data=fine_grained_df,
+        x='Model Confidence',
+        ax=g.ax_marg_x,
+        hue="Model",
+        hue_order=model_order,
+        clip = [tick_centers[0], tick_centers[-1]],
+        fill = True,
+        legend=False
+    )
+    g.ax_joint.set_xticks(tick_centers)
+    g.ax_joint.set_xticklabels(labels, fontsize=8)
+    os.makedirs(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()])), exist_ok=True)
+    plt.savefig(os.path.join(folder, '_'.join([k[0] for k in metrics_dict.keys()]), 'calibration_curve_plurality.png'), bbox_inches='tight')
+    plt.clf()
 
 
 def plot_agreements(metrics_dict, folder):
@@ -564,6 +643,7 @@ def plot_ppls_joint(metrics_dict, folder):
 
 def plot_all_available(metrics_dict, folder):
     plot_calibration_curve(metrics_dict, folder)
+    plot_calibration_curve_plurality(metrics_dict, folder)
     plot_accs_in_expectation_joint(metrics_dict, folder)
     plot_accs_in_expectation(metrics_dict, folder)
     plot_accs_against_plurality(metrics_dict, folder)

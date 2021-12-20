@@ -34,34 +34,30 @@
 \affil{CSE 599: Empirical Foundations of Machine Learning \\
 Paul G. Allen School of Computer Science \& Engineering, University of Washington \texttt{\{julianjm,margsli\}@cs.washington.edu}}
 
-\date{}
+\date{16 Dec 2021}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-  Adversarial data collection has gained currency as a method for evaluating and training robust
-  models. Adversarial data collection, which relies on annotators to find examples where they
-  disagree with a model's prediction, carries the risk of overrepresenting arguable or ambiguous
-  inputs even if they are not useful for learning. To counteract this, adversarial data collection
-  methods may filter their data to increase human agreement. However, it is unclear whether this
+  While modern neural network models have proven extremely effective at function approximation under the Empirical Risk Minimization paradigm, these models still often struggle to generalize well when their input distributions change.
+  To address this issue, 
+  adversarial data collection, which employs annotators to search for examples which a model gets wrong, has shown some promise for conducting more thorough evaluations and training more robust models.  
+  However, by narrowly focusing on disagreements between a model and annotators, this methodology carries the risk of overrepresenting arguable or ambiguous inputs beyond the point at which they are useful for learning. To counteract this, adversarial data collection methods often filter their data to increase human agreement, but it is unclear whether this
   process --- first identifying human/model disagreements, then keeping only human/human
   agreements --- results in systematic biases that ultimately over- or under-sample ambiguous
   inputs. If so, adversarially trained models originally intended to be highly robust may end up
-  with blind spots based on the level of ambiguity in their inputs.
+  with predictable blind spots.
 
   In this work, we test this hypothesis by training models on naturalistically and adversarially
-  collected datasets, and comparing their performance with respect to gold annotator distributions.
+  collected datasets, then comparing their performance with respect to gold annotator distributions.
   As a testbed, we use Natural Language Inference, an NLP benchmark task with already-available
   adversarial data and full annotator distributions. We find no clear difference in accuracy
   between naturalistically and adversarially trained models, but the adversarially trained model is
   considerably more overconfident of its predictions and demonstrates worse calibration, especially
   on ambiguous inputs.
 \end{abstract}
-
-% TODO: address combo problem in into of oversampling ambiguous examples in the first place and then
-% filtering them out in the second; what aggregate effect does this have on ambiguity?
 
 \section{Introduction}
 End-to-end neural network models have had widespread success on standard benchmarks in NLP
@@ -92,15 +88,17 @@ natural settings.
 
 In this project, we propose to investigate the interplay of adversarial learning and evaluation with
 \textit{ambiguity}, or annotator disagreement.
-This is relevant because adversarial data collection can result in strange or unnatural inputs as annotators try tricks to fool a model. To make sure this isn't a problem, such methods often require extra validation of human agreement in order to ensure quality; low-agreement examples are discarded \citep{nie-etal-2020-adversarial}.
+This is relevant because adversarial data collection can result in strange or unnatural inputs as annotators try tricks to fool a model. To make sure this isn't a problem, such methods often filter adversarially-curated data by filtering out examples with low human agreement \citep{nie-etal-2020-adversarial}.
 %This is relevant because searching for adversarial examples may end up either oversampling
 %ambiguous/arguable examples that humans are likely to get `wrong', or, if the data is filtered for
 %high human agreement, it may systematically \textit{under}sample such cases.
 %In the former case, training on this data may have limited benefits, and in the latter case,
 %adversarial evaluation might underestimate model performance in realistic settings.
-This potentially introduces a systematic bias in adversarial data which downsamples ambiguous or arguable inputs, which nevertheless may appear frequently in the wild.
+It is not clear what kinds of biases this process ---
+requiring annotators to search for model mistakes (which should over-sample ambiguous inputs) and then filtering the results for high agreement (which should under-sample them) --- introduces into the data distribution.
+It seems plausible that it may introduce systematic biases, for example, under-sampling ambiguous inputs which may indeed appear often in the wild.
 The implications of training on such biased data for model behavior on ambiguous or arguable examples are unclear, and may be undesirable (\eg, the model may be overconfident on such examples).
-If such shortcomings are present, it would be important for us to understand them.
+If such shortcomings are present, they could form a significant blind spot for adversarially-trained models which would need to be addressed in the data collection process.
 
 \paragraph{Research Question}
 Do adversarial evaluation or training methods introduce systematic biases that ultimately
@@ -108,20 +106,59 @@ misrepresent a model's worst-case performance? In particular, do biases with res
 underlying ambiguity of the underlying data limit the benefits of the adversarial approach?
 
 \section{Background: Robustness and Adversarial Data}
+Suppose we are interested in learning a conditional probability distribution $p(y \mid x)$.
+%which is implemented by a probabilistic labeling function $f \colon X \to p(Y)$.
+The classical machine learning approach of Empirical Risk Minimization does so with the use of input data drawn from a distribution $D$:
+\begin{equation}
+\argmin_\theta \mathbb{E}_{x \sim D, y \sim p(\cdot \mid x)} -\log p(y | x, \theta),
+\label{eq:erm-opt}
+\end{equation}
+where $\theta$ are the model parameters.
+However, this optimization will do a poor job of approximating $p(y \mid x)$ when $x$ is drawn from very different distributions than $D$.
+One approach which as been used to address this is \textit{robust optimization}, which minimizes the worst-case loss subject to some constraints \citep{madry-etal-2018-towards, ghaoui-lebret-1997-robust,wald-1945-statistical}.
+With some abuse of notation, we can view robust optimization as solving a minimax problem:
+\begin{equation}
+\argmin_\theta \max_{D \in \mathbb{D}} \mathbb{E}_{x \sim D, y \sim p(\cdot \mid x)} -\log p(y | x, \theta),
+\label{eq:robust-opt}
+\end{equation}
+where $\mathbb{D}$ is a space of possible input distributions, and $D$ is adversarially chosen among them.
+This formulation invites the question: what if $\mathbb{D}$ included \textit{all possible distributions?} then we are free to find \textit{any} $x$ which the model gets wrong, and optimizing the loss effectively should produce a model which is robust to a wide range of distributions and hard to exploit.
 
-TODO: describe motivation given in slides
+This suggests a practical approach to improving robustness which involves actively searching for examples on which a model fails, and using those examples to train new, more robust models. This general approach has been applied in a variety of settings in NLP, such as the Build-It Break-It shared task \citep{ettinger-etal-2017-towards}, adversarial filtering of large datasets \citep{zellers-etal-2018-swag,sakaguchi-etal-2020-winogrande}, and adversarial benchmarking and leaderboards \citep{nie-etal-2020-adversarial,kiela-etal-2021-dynabench}.
+
+One complication that arises when sourcing adversarial data is with ambiguous or arguable examples.
+Suppose $\hat{\theta}$ perfectly models $p(y \mid x)$. Plugging this into Formula \ref{eq:robust-opt} yields $\max_{D \in \mathbb{D}} \text{H}(Y \mid x)$, where $D$ is concentrated on the inputs $x$ which maximize the entropy of $Y$.
+
+In this context, high entropy in the conditional distribution of $Y$ corresponds to high \textit{annotator disagreement}.\footnote{In this work, we assume all annotators implement the same probabilistic labeling function and disagreement between annotators arises as an inherent feature of the task we are trying to model. This is a simplification, and in real settings, measures may be taken to improve annotator agreement rates as a proxy for data quality, either by making changes to the task instructions, carefully selecting annotators, or using other methods. Whether these measures improve the quality of the resulting system is a task-specific question which we leave out of the scope of this work.}
+When a human searches for an adversarial example, they are looking for a \textit{disagreement} between themselves and the model. In this setting, ambiguous examples on which the model is close to the gold distribution may compete with less ambiguous examples where the model is further from gold.
+In this way, the adversarial data generation process may be biased towards input examples which are ambiguous but unhelpful for training.
+
+One method to counteract this may be to explicitly {\color{red}subtract the gold entropy} from the loss:
+\begin{equation}
+\argmin_\theta \max_{D \in \mathbb{D}} \mathbb{E}_{x \sim D, y \sim p(\cdot \mid x)} -\log p(y \mid x, \theta) \; {\color{red} + \log p(y \mid x, \hat{\theta})}.
+\label{eq:robust-opt-2}
+\end{equation}
+Here, the objective focuses the distribution $D$ on examples which maximize the model's KL-Divergence from the gold distribution, no longer favoring ambiguous examples. 
+Practical approaches to scaling adversarial data collection have applied a similar idea: in Adversarial NLI \citep{nie-etal-2020-adversarial} and Dynabench \citep{kiela-etal-2021-dynabench}, annotators are first asked to find examples where they disagree with the model, and then examples are only kept if multiple validators agree on the correct label.
+However, it is not clear how well-calibrated this process is: it might, for example, systematically omit genuinely ambiguous examples which the model gets wrong with high confidence.
+Whether training on data produced by this process results in pathological model behavior is what we test in this work.
 
 \section{Experimental Setup}
+\label{sec:setup}
 
 \paragraph{Task Setting}
 We use Natural Language Inference \citep{dagan2005pascal,bowman2015large} as our underlying task, as there exist adversarial annotations for this task \citep{nie-etal-2020-adversarial,kiela-etal-2021-dynabench} and annotator disagreement has been well studied \citep{pavlick-kwiatkowski-2019-inherent,nie-bansal-2020-learn,zhang-de-marneffe-2021-identifying}.
 
+\newcommand*{\classical}{\textsc{Classical}}
+\newcommand*{\adversarial}{\textsc{Adversarial}}
+\newcommand*{\all}{\textsc{All}}
+
 \paragraph{Model Variants}
 We train models under three conditions:
 \begin{itemize}
-\item \textbf{Classical:} These models will be trained on data elicited from annotators in a model-agnostic way, \ie, naturalistically.\footnote{Unfortunately, since the NLI task is somewhat artificial, there is no ``natural'' distribution of input texts --- which is one of the issues that leads to annotation artifacts in the first place \citep{gururangan2018annotation} since some of the input text must be annotator-generated. Regardless, spurious correlations exist in any naturalistic distribution so we will use these training sets as proxies for something naturalistic.} For this we use the SNLI \citep{bowman2015large} and MultiNLI \citep{williams-etal-2018-broad} datasets.
-\item \textbf{Adversarial}: These models will be trained on data elicited from annotators under the requirement that they must fool the model. For this we will use the adversarial annotations of \citet{nie-etal-2020-adversarial}.\footnote{In order for this to properly count as adversarial data for our model, we will use the same model family as \citet{nie-etal-2020-adversarial}, which was BERT-large \citep{devlin2019bert} fine-tuned on SNLI and MultiNLI.}
-\item \textbf{All}: These models are trained on the concatenation of all of the above data.
+\item \classical: These models are trained on data elicited from annotators in a model-agnostic way, \ie, naturalistically.\footnote{Unfortunately, since the NLI task is somewhat artificial, there is no ``natural'' distribution of input texts --- which is one of the issues that leads to annotation artifacts in the first place \citep{gururangan2018annotation} since some of the input text must be annotator-generated. Regardless, spurious correlations exist in any naturalistic distribution so we will use these training sets as proxies for something naturalistic.} For this we use the SNLI \citep{bowman2015large} and MultiNLI \citep{williams-etal-2018-broad} datasets.
+\item \adversarial: These models are trained on data elicited from annotators under the requirement that they must fool the model. For this we will use the adversarial annotations of \citet{nie-etal-2020-adversarial}.\footnote{In order for this to properly count as adversarial data for our model, we will use the same model family as \citet{nie-etal-2020-adversarial}, which was BERT-large \citep{devlin2019bert} fine-tuned on SNLI and MultiNLI.}
+\item \all: These models are trained on the concatenation of all of the above data.
 \end{itemize}
 
 \paragraph{Evaluation Data}
@@ -133,71 +170,183 @@ this, we will use the ChaosNLI evaluation sets \citep{nie-bansal-2020-learn} whi
 independent annotations for each example (where the task is 3-way multiclass classification).
 ChaosNLI includes evaluation sets for SNLI \citep{bowman2015large}, MultiNLI
 \citep{williams-etal-2018-broad}, and
-$\alpha$NLI \citep[Abductive NLI]{bhagavatula-etal-2020-abductive}.
+$\alpha$NLI \citep[Abductive NLI]{bhagavatula-etal-2020-abductive}, of which we use the SNLI and MultiNLI sets, since $\alpha$NLI has a different task format than other NLI datasets.
 
 \paragraph{Metrics}
-Using densely-annotated evaluation data, we compute several evaluation metrics:
+Using densely-annotated evaluation data, we compute several evaluation metrics, stratifying each one metrics across different regimes of annotator agreement in order to analyze the dependence of model performance (or model differences) on the ambiguity of their input
+examples.
+Our metrics are:
 \begin{itemize}
     % \item \textbf{Expected Accuracy:} The expectation of the accuracy of the model assuming annotators' labels are sampled from their empirical distribution in ChaosNLI.
     % \item \textbf{Majority-Vote Accuracy:} The accuracy of the model against the majority vote of the 100 annotators.
-    \item \textbf{Accuracy:} The accuracy of the model against the majority vote of the 100 annotators.
-    \item \textbf{Model perplexity:} The exponentiated entropy of the model's predicted
-      distribution; higher corresponds to a more uncertain distribution. (This is independent of the
-      gold labels.) 
-    \item \textbf{KL-Divergence:} The KL-Divergence of the model's predicted label distribution
-      against the empirical distribution of annotated labels. This gives a measure of how
-      well-calibrated the model is with respect to the true annotator distribution.
+    \item \textbf{Accuracy:} The accuracy of the model against the purality vote of the 100 annotators. We stratify this by \textit{human accuracy}, the accuracy of a randomly sampled annotator against the plurality.
+    \item \textbf{Model perplexity:} The exponentiated entropy of the model's predicted distribution; higher corresponds to a more uncertain distribution. (This is independent of the gold labels.) We stratify this by the perplexity of the human annotator distribution.
+    \item \textbf{KL-Divergence:} The KL-Divergence of the model's predicted label distribution against the empirical distribution of annotated labels. This gives a measure of how well-calibrated the model is with respect to the true annotator distribution. We stratify this measure by the entropy of the human annotator distribution.
 \end{itemize}
-Each of these metrics can also be computed for a randomly sampled human from the annotator
-distribution as a baseline (for KL-Divergence, this is 0 by construction).
+As a reference point, we also compute these metrics for randomly sampled humans from the annotator distribution (for KL-Divergence, this is 0 by construction).
 % Expected accuracy emulates the typical accuracy computation in an IID empirical risk minimization setting. Majority-vote accuracy allows us to measure accuracy above human performance. And KL-divergence will show the extent to which the model learns to reproduce the label distribution produced by annotators.
 
-We will stratify each of these metrics across different regimes of annotator agreement in order to
-analyze the dependence of model performance (or model differences) on the ambiguity of their input
-examples.
+%To more deeply understand our models' performance on ambiguous examples, we stratify our metrics by measures of human agreement. We will stratify examples by two measures of agreement:
+%\begin{itemize}
+%    \item \textbf{Human accuracy:} accuracy of a randomly sampled annotator against the annotators' majority vote.
+%    low corresponds to low agreement; high is high agreement.
+%    % On this graph, human performance on expected accuracy would be the $y=x$ diagonal.
+%    \item \textbf{Human perplexity:} the exponentiated entropy of the distribution of annotator labels. Low corresponds to high agreement; high is low agreement. If the model perfectly matches the human label distribution, its perplexity would equal human perplexity and it would fall on the $y=x$ diagonal. In the case where $y$ is KL-divergence or model perplexity, we can directly use a scatter plot instead of binning.
+%\end{itemize}
+%A couple of hypothetical example results graphs for this are shown in \autoref{fig:mock-graphs}.
 
 \begin{figure*}[t!]
 \centering
-\begin{subfigure}[b]{0.3\textwidth}
-% \includegraphics[width=\textwidth]{images/acc-snli.png}
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/acc-expectation-snli.png}
 \caption{SNLI.}
 \end{subfigure}
-
 \hfill
-\begin{subfigure}[b]{0.3\textwidth}
-% \includegraphics[width=\textwidth]{images/acc-mnli.png}
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/acc-expectation-mnli.png}
 \caption{MultiNLI.}
 \end{subfigure}
-
-\hfill
-\begin{subfigure}[b]{0.3\textwidth}
-  % \includegraphics[width=\textwidth]{images/acc-alphanli.png}
-  \caption{$\alpha$NLI.}
-\end{subfigure}
-
-% \caption{Model perplexity, stratified by human perplexity. In these hypothetical results, the adversarially-trained model is disproportionately overconfident on ambiguous examples, since high-agreement examples were overrepresented for it at training time.\label{fig:perplexity}}
 \caption{
-  Model accuracy stratified by human accuracy, relative to the human plurality judgment.\label{fig:accuracy}
-  \label{fig:acc-graphs}}
+  Model accuracy stratified by human accuracy, relative to a randomly sampled human judgment. Chance accuracy is approximately $\frac{1}{3}$, and the human baseline (which uses the plurality vote as the prediction) is an upper bound.\label{fig:acc-graphs}}
 \end{figure*}
 
-% TODO similar figures for perplexity and KL-divergence
+\begin{figure*}[t!]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/acc-plurality-snli.png}
+\caption{SNLI.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/acc-plurality-mnli.png}
+\caption{MultiNLI.}
+\end{subfigure}
+\caption{
+  Model accuracy stratified by human accuracy, relative to the human plurality vote. The early dip in the human baseline is likely a minor data processing artifact.
+}
+\end{figure*}
 
-\paragraph{Analysis}
-To more deeply understand our models' performance on ambiguous examples, we will \textbf{stratify our metrics by agreement}. We will stratify examples by two measures of agreement:
-\begin{itemize}
-    \item \textbf{Human expected accuracy:} low corresponds to low agreement; high is high agreement. On this graph, human performance on expected accuracy would be the $y=x$ diagonal.
-    \item \textbf{Human perplexity:} the exponentiated entropy of the distribution of annotator labels. Low corresponds to high agreement; high is low agreement. If the model perfectly matches the human label distribution, its perplexity would equal human perplexity and it would fall on the $y=x$ diagonal. In the case where $y$ is KL-divergence or model perplexity, we can directly use a scatter plot instead of binning.
-\end{itemize}
-A couple of hypothetical example results graphs for this are shown in \autoref{fig:mock-graphs}.
+\begin{figure*}[t!]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/ppl-snli.png}
+\caption{SNLI.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/ppl-mnli.png}
+\caption{MultiNLI.}
+\end{subfigure}
+\caption{
+  Model perplexity against annotator perplexity. Kernel density estimates of the marginal distributions are shown on the sides. \label{fig:ppl-graphs}}
+\end{figure*}
 
-\section*{Impact}
-Example results that we would be looking for are:
+\begin{figure*}[t!]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/kldiv-snli.png}
+\caption{SNLI.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/kldiv-mnli.png}
+\caption{MultiNLI.}
+\end{subfigure}
+\caption{
+  KL-Divergence of model output distributions, graphed relative to the entropy of the annotator distribution. Both axes are measured in nats, and kernel density estimates of the marginals are given on the sides.\label{fig:kldiv-graphs}}
+\end{figure*}
+
+\begin{figure*}[t!]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/calibration-snli.png}
+\caption{SNLI.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/calibration-mnli.png}
+\caption{MultiNLI.}
+\end{subfigure}
+\caption{
+  Calibration curves for accuracy against a randomly sampled human. As the confidence score, we use the probability assigned by the model to its prediction.
+  \label{fig:calibration-graphs}}
+\end{figure*}
+
+\begin{figure*}[t!]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/calibration-plurality-snli.png}
+\caption{SNLI.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{images/calibration-plurality-mnli.png}
+\caption{MultiNLI.}
+\end{subfigure}
+\caption{
+  Calibration curves for accuracy against the plurality vote among humans. As the confidence score, we use the probability assigned by the model to its prediction.
+  \label{fig:calibration-graphs-plurality}}
+\end{figure*}
+
+\subsection*{Implementation Details}
+
+In all of our experiments, we begin with RoBERTa-Large \cite{liu2019roberta}, a masked language model pretrained on a large text corpus comprised of internet and book corpora. We then attach a classifier head and fine-tune each model according to the dataset combinations listed in Section~\ref{sec:setup}.
+The model was implemented using the AllenNLP library and trained using the AdamW optimizer to maximize accuracy on the combined development sets of the model variant's respective corpora. Code to reproduce our experiments and analysis is publicly available.\footnote{\url{https://github.com/julianmichael/aeae}}
+
+\section*{Results}
+
+All results in this section are reported on the SNLI and MultiNLI development set portions of the ChaosNLI data.
+
+\paragraph{Accuracy}
+Model accuracy on the SNLI and MultiNLI subsets of ChaosNLI are shown in \autoref{fig:acc-graphs}.
+All models exhibit the same overall trend, approaching or reaching human performance on the most ambiguous and least ambiguous examples, with a dip in the middle of the range.\footnote{Note that since we are measuring accuracy against the plurality of annotators, human performance is not a strict upper bound in this case; a model which perfectly reproduced the annotator distribution would always get an accuracy of 1.}
+Even if adversarial data collection does undersample ambiguous inputs, we find no noticeable (or significant) effect on model performance in the low-agreement regime.
+A potential reason for this is that the baseline performance is already so low in these cases --- very close to chance level --- that there is little room for decreasing performance further.
+
+\paragraph{Perplexity}
+To understand the confidence levels of our models, we measure the perplexity of their output distributions and compare to the perplexity of the human annotator distributions, shown in \autoref{fig:ppl-graphs}.
+Here, there is a clear difference between \adversarial\ and the other models: it has extremely low perplexity on many more examples, and high perplexity on very few.
+Furthermore, while model perplexity is positively correlated with annotator perplexity for all models, the \adversarial\ model is less sensitive to it, with its perplexity growing less with respect to annotator perplexity.
+This suggests the adversarial data collection process may, on aggregate, favor examples with less ambiguity, skewing the behavior of the model.
+The \all\ model, which was exposed to naturalistic data as well, does not display the same effect.
+
+\paragraph{KL-Divergence}
+To get a sense of how well the model fits the annotator distributions, we show the KL-Divergence of the models' predictions against the annotator distributions in \autoref{fig:kldiv-graphs}.
+What we find is that \adversarial\ diverges greatly from the gold distributions in comparison to \classical\ and \all: it has much higher KL-Divergence in aggregate, many more examples with high KL-Divergence, and its KL-Divergence scores grow quickly as the entropy of the annotator distribution increases.
+The biases in adversarial data collection, then, have led more to overconfidence on ambiguous examples than wrong predictions on unambiguous examples.
+These results provide supporting evidence for the hypothesis that adversarially trained models are underexposed to ambiguous examples and that this has undesirable effects on their performance.
+
+\paragraph{Calibration}
+Calibration curves are shown in \autoref{fig:calibration-graphs}. We find that the \adversarial\ model is highly confident more often than the other models, and at least in the very-high-confidence regime (>80\% confidence), it is significantly worse calibrated on SNLI (for MultiNLI, the results are borderline and only for the highest-confidence bin). However, none of the models are very well calibrated in the first place.
+
+We can also plot calibration curves relative to the plurality vote among annotators (\autoref{fig:calibration-graphs-plurality}), which reflects the assumption that the model's maximum output probability reflects its epistemic uncertainty over the max-probability label. Here, the results are similar.
+Future work should more carefully investigate the relationship between model calibration and estimation of full annotator distributions; as, it seems that these two objectives may have conflicting goals and not completely align with each other in some cases.
+
+\section*{Conclusion}
+
+We have shown that, for existing adversarially-collected NLI datasets, adversarial training can produce undesirable performance characteristics in the models that result.
+In particular, models trained only on adversarially-sourced data may produce output distributions that are much farther from gold annotator distributions and don't accurately convey annotator uncertainty, producing highly confident predictions even on highly ambiguous examples.
+It is possible that adversarial training in this setting can produce lower prediction accuracy in regimes of low human agreement, but baseline accuracy is already so low in for our models and data, and there are so few examples in the extremely-ambiguous regime, that such an effect is hard to find.
+
+In our results, if a large amount of naturalistic data is also included in training (as in the \all\ model), the model's tendency towards overconfidence seems to be largely mitigated.
+Potential questions for future work include:
 \begin{itemize}
-    \item A relative lack of performance improvement on ambiguous examples by adversarially-trained models (\autoref{fig:accuracy}). If the performance improvement reliably tracks inversely with example ambiguity, we may be able to estimate the positive effect of adversarial training as a function of the ambiguity rates in new naturalistic data sets. 
-    \item Overconfidence on ambiguous examples (\autoref{fig:perplexity}). If adversarial training results in such overconfidence, then mitigation measures may be prudent for the deployment of such models.
+    \item What do the the human annotation distributions look like on adversarially collected data, and how do they differ from those in existing datasets?
+    \item What are the linguistic and statistical features of NLI examples that are highly ambiguous versus unambiguous?
+    \item Can post-hoc model calibration techniques improve the behavior of adversarially trained models, even if they rarely see genuinely ambiguous examples?
+    \item How many naturalistic or ambiguous examples does a model need to see in training in order to mitigate its overconfidence problem?
+    \item Could providing full annotator distributions during training allow for a more data-efficient way of fitting annotator distributions or training on adversarial data?
+    \item Can we methodically produce better-calibrated models by sampling adversarial examples according to KL-Divergence instead of agreement and disagreement heuristics?
 \end{itemize}
-Adversarial data collection requires extra data filtering; if this introduces systematic biases which cause undesirable model behavior on ambiguous data (such as overconfidence or degraded performance) then mitigations will be important to consider prior to deployment of such models in naturalistic settings.
+
+
+% \section*{Impact}
+% Example results that we would be looking for are:
+% \begin{itemize}
+%     \item A relative lack of performance improvement on ambiguous examples by adversarially-trained models (\autoref{fig:accuracy}). If the performance improvement reliably tracks inversely with example ambiguity, we may be able to estimate the positive effect of adversarial training as a function of the ambiguity rates in new naturalistic data sets. 
+%     \item Overconfidence on ambiguous examples (\autoref{fig:perplexity}). If adversarial training results in such overconfidence, then mitigation measures may be prudent for the deployment of such models.
+% \end{itemize}
+% Adversarial data collection requires extra data filtering; if this introduces systematic biases which cause undesirable model behavior on ambiguous data (such as overconfidence or degraded performance) then mitigations will be important to consider prior to deployment of such models in naturalistic settings.
 
 \bibliographystyle{acl_natbib}
 \bibliography{references}
