@@ -1,12 +1,20 @@
-# An Ambiguous Evaluation of Adversarial Evaluation
+# Overconfidence in the Face of Ambiguity with Adversarial Data
 
 ![AEAEAEAEAE](assets/aeae.png)
 <div align="center"><em>AEAEAEAEAE</em></div>
 
 ## Contents
 
+This is the repository for the paper:
+> Overconfidence in the Face of Ambiguity with Adversarial Data
+> Margaret Li\* and Julian Michael\*
+> Proceedings of the First Workshop on Dynamic Adversarial Data Collection (DADC) at NAACL 2022 in Seattle, WA.
+
+(The silly acronym is from the original working name, "An Ambiguous Evaluation of Adversarial Evaluation")
+
+In this repository:
 * `aeae/`: Source code for data, metrics, etc.
-* `proposal/`: Completed project proposal.
+* `scripts/`: Entry points for running predictions, evaluating, and producing plots for our analysis.
 
 ## Usage
 
@@ -37,6 +45,5 @@ NLI instances are preprocessed into the following format:
   "label": "e" | "c" | "n"
 }
 ```
-TODO: specify format for the label distribution.
 
-
+Rest of the documentation is TODO.
