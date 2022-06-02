@@ -6,9 +6,10 @@
 ## Contents
 
 This is the repository for the paper:
-> Overconfidence in the Face of Ambiguity with Adversarial Data
-> Margaret Li\* and Julian Michael\*
-> Proceedings of the First Workshop on Dynamic Adversarial Data Collection (DADC) at NAACL 2022 in Seattle, WA.
+
+**Overconfidence in the Face of Ambiguity with Adversarial Data.**
+Margaret Li\* and Julian Michael,\*
+_Proceedings of the First Workshop on Dynamic Adversarial Data Collection (DADC)_ at NAACL 2022.
 
 (The silly acronym is from the original working name, "An Ambiguous Evaluation of Adversarial Evaluation")
 
