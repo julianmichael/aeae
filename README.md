@@ -7,7 +7,7 @@
 
 This is the repository for the paper:
 
-**Overconfidence in the Face of Ambiguity with Adversarial Data.**
+**[Overconfidence in the Face of Ambiguity with Adversarial Data.](https://aclanthology.org/2022.dadc-1.4/)**
 Margaret Li\* and Julian Michael,\*
 _Proceedings of the First Workshop on Dynamic Adversarial Data Collection (DADC)_ at NAACL 2022.
 
