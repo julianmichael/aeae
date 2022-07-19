@@ -17,6 +17,12 @@ In this repository:
 * `aeae/`: Source code for data, metrics, etc.
 * `scripts/`: Entry points for running predictions, evaluating, and producing plots for our analysis.
 
+## Erratum
+
+In the paper, we forget to mention that the FEVER-NLI data was used together with SNLI and MNLI
+to train the `classical` model. This means `classical` is trained on all of the
+non-adversarially-collected data that the seed models for ANLI were trained on.
+
 ## Usage
 
 This project requires Python 3 and is written using AllenNLP and PyTorch.
